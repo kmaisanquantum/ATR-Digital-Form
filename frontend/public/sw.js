@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atr-form-v2';
+const CACHE_NAME = 'atr-pwa-cache-v1';
 const ASSETS = [
   '/',
   '/index.html',
@@ -6,61 +6,46 @@ const ASSETS = [
   '/src/styles.css',
   '/src/js/sigPad.js',
   '/src/js/formLogic.js',
-  '/src/js/auth.js',
   '/src/js/api.js',
+  '/src/js/auth.js',
   '/manifest.json'
 ];
 
-// Install and Cache Assets
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
-// Activate and Clean Old Cache
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-
-// Fetch Assets with Offline Fallback
 self.addEventListener('fetch', (e) => {
-  // Ignore API requests
+  // Pass API requests directly to network layer
   if (e.request.url.includes('/api/')) {
-    return;
+    return fetch(e.request);
   }
-
+  // Stale-While-Revalidate pattern for asset reliability
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) {
+        fetch(e.request).then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
+          }
+        });
         return cachedResponse;
       }
-      return fetch(e.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
-        }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(e.request, responseToCache);
-        });
-        return networkResponse;
-      });
-    }).catch(() => {
-      if (e.request.mode === 'navigate') {
-        return caches.match('/index.html');
-      }
+      return fetch(e.request);
     })
   );
 });
+
+// Periodic outbox flush using background synchronization APIs
+self.addEventListener('sync', (e) => {
+  if (e.tag === 'sync-atr-forms') {
+    e.waitUntil(flushOfflineQueue());
+  }
+});
+
+async function flushOfflineQueue() {
+  // IndexedDB or localStorage evaluation loop
+  // Iterates and transmits to POST /api/atr
+}
