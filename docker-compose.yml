@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: atr-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: atr_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: atr-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/atr_db?schema=public
+      - JWT_SECRET=pngdf_aviation_super_secret_jwt_key_2026
+      - PORT=5000
+    depends_on:
+      - postgres
+
+  frontend:
+    image: node:18-alpine
+    container_name: atr-frontend
+    working_dir: /usr/src/app
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "3000:3000"
+    command: npm run dev:frontend -- --host 0.0.0.0
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
