@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ATR — Air Task Request v2.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #0f2040;
+    --navy-light: #162a52;
+    --gold: #c9a84c;
+    --gold-bright: #f0c050;
+    --red: #c0392b;
+    --green: #27ae60;
+    --steel: #4a6fa5;
+    --steel-light: #6a8fc5;
+    --text: #e8edf5;
+    --text-dim: #8a9ab8;
+    --border: #1e3255;
+    --border-bright: #2e4a7a;
+    --input-bg: #0d1e38;
+    --panel: #111e35;
+    --success: #1a7a4a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'Nunito Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .app-header {
+    background: linear-gradient(135deg, #060e1d 0%, #0a1628 50%, #0e1f3a 100%);
+    border-bottom: 2px solid var(--gold);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  }
+
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .header-emblem {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-emblem svg { width: 22px; height: 22px; }
+
+  .header-text h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .header-text p {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .header-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+
+  .btn-icon {
+    background: var(--navy-light);
+    border: 1px solid var(--border-bright);
+    color: var(--text-dim);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .btn-icon:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrap {
+    background: var(--navy-mid);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    position: sticky;
+    top: 73px;
+    z-index: 99;
+  }
+
+  .progress-steps {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .progress-steps::-webkit-scrollbar { display: none; }
+
+  .step-pill {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 0.66rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.25s;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .step-pill.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #000;
+  }
+
+  .step-pill.completed {
+    background: rgba(39,174,96,0.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* MAIN CONTENT */
+  .main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  /* SECTION CARDS */
+  .section-card {
+    display: none;
+    animation: slideIn 0.3s ease;
+  }
+
+  .section-card.active { display: block; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-bright);
+  }
+
+  .section-num {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .section-sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .office-only-badge {
+    margin-left: auto;
+    background: rgba(192,57,43,0.15);
+    border: 1px solid rgba(192,57,43,0.4);
+    color: #e74c3c;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.62rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  /* FIELD GROUPS */
+  .field-group {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  .field-group-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--steel-light);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .field-group-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  @media (max-width: 600px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* FORM FIELDS */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  label .req { color: var(--gold); margin-left: 2px; }
+  label .note { color: #4a6fa5; font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.65rem; margin-left: 6px; }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="datetime-local"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+  }
+
+  input::placeholder, textarea::placeholder { color: #2d4163; }
+
+  select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a6fa5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  select option { background: var(--navy-mid); }
+
+  /* RADIO / CHECKBOX */
+  .radio-group, .check-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .radio-btn, .check-btn {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .radio-btn input, .check-btn input { display: none; }
+
+  .radio-btn span, .check-btn span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    transition: all 0.2s;
+    background: var(--input-bg);
+    letter-spacing: 0.04em;
+  }
+
+  .radio-btn input:checked + span,
+  .check-btn input:checked + span {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(201,168,76,0.08);
+  }
+
+  /* CONDITIONAL FIELDS */
+  .conditional { display: none; }
+  .conditional.visible { display: block; }
+
+  /* PASSENGER TABLE */
+  .pax-table-wrap { overflow-x: auto; margin-top: 12px; }
+
+  .pax-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    min-width: 700px;
+  }
+
+  .pax-table th {
+    background: var(--navy-light);
+    color: var(--gold);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 8px;
+    border: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .pax-table td {
+    padding: 4px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+  }
+
+  .pax-table td input {
+    background: transparent;
+    border: none;
+    padding: 5px 6px;
+    font-size: 0.8rem;
+    width: 100%;
+    color: var(--text);
+    outline: none;
+    min-width: 60px;
+  }
+
+  .pax-table td input:focus {
+    background: rgba(201,168,76,0.05);
+    border-radius: 3px;
+  }
+
+  .pax-table tr:nth-child(even) td { background: rgba(13,30,56,0.6); }
+  .pax-table .row-num { color: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; text-align: center; padding: 4px 8px; }
+
+  /* SIGNATURE PAD */
+  .sig-wrap {
+    background: var(--input-bg);
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .sig-label {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  canvas.sig-canvas {
+    width: 100%;
+    height: 100px;
+    background: #060e1d;
+    border-radius: 6px;
+    cursor: crosshair;
+    display: block;
+    touch-action: none;
+  }
+
+  .sig-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .sig-hint { font-size: 0.65rem; color: var(--text-dim); }
+
+  .btn-clear-sig {
+    background: none;
+    border: 1px solid var(--border-bright);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    transition: all 0.2s;
+  }
+
+  .btn-clear-sig:hover { border-color: var(--red); color: var(--red); }
+
+  /* AGREEMENT CHECKBOX */
+  .agreement-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: var(--input-bg);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .agreement-item:hover { border-color: var(--border-bright); }
+  .agreement-item.checked { border-color: var(--green); background: rgba(39,174,96,0.05); }
+
+  .agreement-item input { display: none; }
+
+  .agreement-cb {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-bright);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+  }
+
+  .agreement-item.checked .agreement-cb {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .agreement-cb::after {
+    content: '';
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translateY(-1px);
+    display: none;
+  }
+
+  .agreement-item.checked .agreement-cb::after { display: block; }
+
+  .agreement-text { font-size: 0.82rem; line-height: 1.5; color: var(--text-dim); }
+
+  /* NAVIGATION BUTTONS */
+  .nav-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .btn-back, .btn-next, .btn-submit, .btn-drive {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-back {
+    background: var(--navy-light);
+    border: 1px solid var(--border-bright);
+    color: var(--text-dim);
+  }
+
+  .btn-back:hover { border-color: var(--steel); color: var(--text); }
+
+  .btn-next {
+    background: linear-gradient(135deg, #1a3a6a, #2a5090);
+    border: 1px solid var(--steel);
+    color: var(--text);
+    margin-left: auto;
+  }
+
+  .btn-next:hover {
+    background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+    border-color: var(--gold-bright);
+    color: #000;
+  }
+
+  .btn-submit {
+    background: linear-gradient(135deg, var(--success), #2ecc71);
+    color: #fff;
+    margin-left: auto;
+  }
+
+  .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(39,174,96,0.3); }
+
+  .btn-drive {
+    background: linear-gradient(135deg, #1565c0, #1976d2);
+    color: #fff;
+  }
+
+  .btn-drive:hover { background: linear-gradient(135deg, #1976d2, #2196f3); }
+
+  /* STATUS / TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--navy-light);
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    padding: 14px 22px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 1000;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  /* SUCCESS SCREEN */
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .success-screen.active { display: block; }
+
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    background: rgba(39,174,96,0.15);
+    border: 2px solid var(--green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 2rem;
+  }
+
+  .success-screen h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  .success-screen p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    max-width: 400px;
+    margin: 0 auto 30px;
+    line-height: 1.6;
+  }
+
+  .atr-ref {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.2rem;
+    color: var(--gold);
+    background: var(--input-bg);
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 12px 20px;
+    display: inline-block;
+    margin-bottom: 24px;
+    letter-spacing: 0.1em;
+  }
+
+  .success-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* INFO BOX */
+  .info-box {
+    background: rgba(74,111,165,0.12);
+    border: 1px solid rgba(74,111,165,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .info-box strong { color: var(--steel-light); }
+
+  /* DRIVE SECTION */
+  .drive-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .drive-section svg { margin-bottom: 12px; }
+
+  .drive-section h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .drive-section p { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 14px; line-height: 1.5; }
+
+  /* REQUIRED FIELD INDICATOR */
+  .field-required-notice {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+
+  .field-required-notice span { color: var(--gold); }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 18px 0;
+  }
+
+  /* MOBILE optimizations */
+  @media (max-width: 480px) {
+    .header-text h1 { font-size: 1rem; }
+    .btn-icon span { display: none; }
+    .main { padding: 16px 12px 60px; }
+    .field-group { padding: 14px; }
+    .section-title { font-size: 1rem; }
+  }
+
+  /* PRINT */
+  @media print {
+    .app-header, .progress-bar-wrap, .nav-buttons, .toast { display: none !important; }
+    .section-card { display: block !important; }
+    body { background: white; color: black; }
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-inner">
+    <div class="header-emblem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Air Task Request</h1>
+      <p>PNGDF Aviation Support — Version 2.0</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="printForm()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>Print</span>
+      </button>
+      <button class="btn-icon" onclick="saveDraft()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span>Save Draft</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- PROGRESS BAR -->
+<div class="progress-bar-wrap">
+  <div class="progress-steps" id="progressSteps">
+    <div class="step-pill active" onclick="goToStep(0)">1. Requesting Unit</div>
+    <div class="step-pill" onclick="goToStep(1)">2. Task Info</div>
+    <div class="step-pill" onclick="goToStep(2)">3. PAX & Cargo</div>
+    <div class="step-pill" onclick="goToStep(3)">4. RW Support</div>
+    <div class="step-pill" onclick="goToStep(4)">5. Agreements</div>
+    <div class="step-pill" onclick="goToStep(5)">6. PAX List</div>
+    <div class="step-pill" onclick="goToStep(6)">7. Authorisation</div>
+    <div class="step-pill" onclick="goToStep(7)">8. Submit</div>
+  </div>
+</div>
+
+<main class="main" id="mainContent">
+
+  <!-- ============ STEP 0: REQUESTING UNIT ============ -->
+  <div class="section-card active" id="step-0">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div>
+        <div class="section-title">Requesting Organisation / Unit</div>
+        <div class="section-sub">Primary planner contact — DO NOT LEAVE BLANK</div>
+      </div>
+    </div>
+
+    <p class="field-required-notice"><span>*</span> Required fields</p>
+
+    <div class="info-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>Send completed ATRs to: <strong>Pngdf.atr@outlook.com</strong><br>The PRI contact will be the primary planner of the Tasking. ALT to be Movements Cell or 2IC of Tasking.</div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Organisation Details</div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Requesting Unit / Organisation <span class="req">*</span></label>
+          <input type="text" id="unit" placeholder="Unit / Organisation name" required>
+        </div>
+        <div class="field">
+          <label>ATR Submission DTG <span class="req">*</span> <span class="note">Date/Time of submission, NOT tasking date</span></label>
+          <input type="datetime-local" id="submissionDTG">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Primary Contact</div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Rank / Name <span class="req">*</span></label>
+          <input type="text" id="priName" placeholder="e.g. CPL Smith, J">
+        </div>
+        <div class="field">
+          <label>Mobile <span class="req">*</span></label>
+          <input type="tel" id="priMobile" placeholder="+675 xxxx xxxx">
+        </div>
+        <div class="field">
+          <label>Email <span class="req">*</span></label>
+          <input type="email" id="priEmail" placeholder="name@pngdf.mil.pg">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Alternate Contact</div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Rank / Name</label>
+          <input type="text" id="altName" placeholder="e.g. Movements Cell">
+        </div>
+        <div class="field">
+          <label>Mobile</label>
+          <input type="tel" id="altMobile" placeholder="+675 xxxx xxxx">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="altEmail" placeholder="name@pngdf.mil.pg">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Task Date</div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Date of Task <span class="req">*</span></label>
+          <input type="date" id="taskDate">
+        </div>
+        <div class="field">
+          <label>Latest Movement Date <span class="note">if range required</span></label>
+          <input type="date" id="taskDateLatest">
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <span></span>
+      <button class="btn-next" onclick="nextStep()">Next: Task Information →</button>
+    </div>
+  </div>
+
+  <!-- ============ STEP 1: TASK INFORMATION ============ -->
+  <div class="section-card" id="step-1">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">Task Information</div>
+        <div class="section-sub">Describe the requested aviation support</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Support Description</div>
+      <div class="field">
+        <label>Requested Support Description <span class="req">*</span> <span class="note">Brief general description of the task requested</span></label>
+        <textarea id="supportDesc" rows="4" placeholder="Describe the support required…"></textarea>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Support Date & Aircraft</div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Support Date / Time (local) <span class="req">*</span> <span class="note">DTG of task requested</span></label>
+          <input type="datetime-local" id="supportDTG">
+        </div>
+        <div class="field">
+          <label>ACFT Type <span class="note">e.g. PAC750, C130, C27, RW</span></label>
+          <select id="acftType">
+            <option value="">— Select or specify —</option>
+            <option>PAC750</option>
+            <option>C-130 Hercules</option>
+            <option>C-27 Spartan</option>
+            <option>Rotary Wing (RW)</option>
+            <option>Any Available</option>
+            <option value="other">Other (specify below)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field conditional" id="acftOtherWrap">
+        <label>Specify ACFT Type</label>
+        <input type="text" id="acftOther" placeholder="Specify aircraft type">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Route / Locations</div>
+      <div class="field">
+        <label>Locations Travelling To and From <span class="req">*</span> <span class="note">General outline including non-standard locations</span></label>
+        <textarea id="locations" rows="3" placeholder="e.g. AYPY → AYNZ → WAOO — include details on any non-standard locations"></textarea>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Departure Location (ICAO)</label>
+          <input type="text" id="depICAO" placeholder="e.g. AYPY" style="text-transform:uppercase">
+        </div>
+        <div class="field">
+          <label>Destination Location (ICAO)</label>
+          <input type="text" id="destICAO" placeholder="e.g. AYNZ" style="text-transform:uppercase">
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="prevStep()">← Back</button>
+      <button class="btn-next" onclick="nextStep()">Next: PAX & Cargo →</button>
+    </div>
+  </div>
+
+  <!-- ============ STEP 2: PAX & CARGO ============ -->
+  <div class="section-card" id="step-2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">PAX & Cargo Details</div>
+        <div class="section-sub">Provide as much detail as possible</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Passenger Details</div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Number of PAX <span class="req">*</span></label>
+          <input type="number" id="paxCount" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Personnel Type</label>
+          <div class="radio-group">
+            <label class="radio-btn"><input type="radio" name="paxType" value="ADF"> <span>ADF</span></label>
+            <label class="radio-btn"><input type="radio" name="paxType" value="PNGDF"> <span>PNGDF</span></label>
+            <label class="radio-btn"><input type="radio" name="paxType" value="Both"> <span>Both</span></label>
+            <label class="radio-btn"><input type="radio" name="paxType" value="Civilian"> <span>Civilian</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>VIP Passenger?</label>
+        <div class="radio-group">
+          <label class="radio-btn"><input type="radio" name="vip" value="N" onclick="toggleVIP(false)"> <span>No</span></label>
+          <label class="radio-btn"><input type="radio" name="vip" value="Y" onclick="toggleVIP(true)"> <span>Yes</span></label>
+        </div>
+      </div>
+
+      <div class="conditional" id="vipDetails">
+        <div class="field">
+          <label>VIP Title / Name</label>
+          <input type="text" id="vipTitle" placeholder="e.g. General Smith, COMD PNGDF">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Cargo Details</div>
+      <div class="field">
+        <label>Dangerous Goods (DG)?</label>
+        <div class="radio-group">
+          <label class="radio-btn"><input type="radio" name="dg" value="N" onclick="toggleDG(false)"> <span>No</span></label>
+          <label class="radio-btn"><input type="radio" name="dg" value="Y" onclick="toggleDG(true)"> <span>Yes</span></label>
+        </div>
+      </div>
+
+      <div class="conditional" id="dgDetails">
+        <div class="field">
+          <label>DG Description <span class="note">What is it? How much?</span></label>
+          <input type="text" id="dgDesc" placeholder="e.g. Class 3 Flammable Liquid — 40L fuel">
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <label>Cargo Items</label>
+          <input type="text" id="cargoItems" placeholder="e.g. Ration packs, equipment">
+        </div>
+        <div class="field">
+          <label>Total Weight (kg)</label>
+          <input type="number" id="cargoWeight" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Number of Pieces</label>
+          <input type="number" id="cargoPieces" placeholder="0" min="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Special Instructions / Comments</div>
+      <div class="field">
+        <label>Section 3 — Any extra details not covered above</label>
+        <textarea id="specialInstructions" rows="4" placeholder="Additional details, special requirements, or comments…"></textarea>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="prevStep()">← Back</button>
+      <button class="btn-next" onclick="nextStep()">Next: RW Support →</button>
+    </div>
+  </div>
+
+  <!-- ============ STEP 3: RW SUPPORT ============ -->
+  <div class="section-card" id="step-3">
+    <div class="section-header">
+      <div class="section-num">5–6</div>
+      <div>
+        <div class="section-title">Rotary Wing (RW) Support</div>
+        <div class="section-sub">Complete only if requesting rotary wing support</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>For RW requests, fill out as much detail as possible. Skip this section if requesting fixed-wing support only.</div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Section 5 — Pick-up Point</div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Location Name <span class="req">*</span></label>
+          <input type="text" id="puLocation" placeholder="Pick-up location name">
+        </div>
+        <div class="field">
+          <label>Preferred Departure Time</label>
+          <input type="time" id="puTime">
+        </div>
+      </div>
+      <div class="field">
+        <label>LZ Description</label>
+        <textarea id="puLZ" rows="2" placeholder="Landing zone dimensions, surface, obstructions, elevation…"></textarea>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Callsign</label>
+          <input type="text" id="puCallsign" placeholder="Callsign at LZ">
+        </div>
+        <div class="field">
+          <label>Frequency (MHz)</label>
+          <input type="text" id="puFreq" placeholder="e.g. 126.700">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Section 6 — Delivery Point</div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Location Name <span class="req">*</span></label>
+          <input type="text" id="dlLocation" placeholder="Delivery location name">
+        </div>
+        <div class="field">
+          <label>Preferred Arrival Time</label>
+          <input type="time" id="dlTime">
+        </div>
+      </div>
+      <div class="field">
+        <label>LZ Description</label>
+        <textarea id="dlLZ" rows="2" placeholder="Landing zone dimensions, surface, obstructions, elevation…"></textarea>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Callsign</label>
+          <input type="text" id="dlCallsign" placeholder="Callsign at LZ">
+        </div>
+        <div class="field">
+          <label>Frequency (MHz)</label>
+          <input type="text" id="dlFreq" placeholder="e.g. 126.700">
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="prevStep()">← Back</button>
+      <button class="btn-next" onclick="nextStep()">Next: Agreements →</button>
+    </div>
+  </div>
+
+  <!-- ============ STEP 4: AGREEMENTS ============ -->
+  <div class="section-card" id="step-4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div>
+        <div class="section-title">Personnel Agreements</div>
+        <div class="section-sub">All passengers must agree to these directions</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div><strong style="color:#e74c3c">Failure to comply</strong> may result in tasking being cancelled or individual members not being transported.</div>
+    </div>
+
+    <div id="agreementList">
+      <label class="agreement-item" id="agr0" onclick="toggleAgreement(0)">
+        <input type="checkbox" id="agr0cb">
+        <div class="agreement-cb"></div>
+        <div class="agreement-text">All passengers will carry valid identification. Military members will carry a valid military ID.</div>
+      </label>
+      <label class="agreement-item" id="agr1" onclick="toggleAgreement(1)">
+        <input type="checkbox" id="agr1cb">
+        <div class="agreement-cb"></div>
+        <div class="agreement-text">PAX will be at Air Movements (AMS) of departure location no later than (NLT) 2 hours prior to aircraft departure.</div>
+      </label>
+      <label class="agreement-item" id="agr2" onclick="toggleAgreement(2)">
+        <input type="checkbox" id="agr2cb">
+        <div class="agreement-cb"></div>
+        <div class="agreement-text">Dangerous Goods will be at AMS NLT 48 hours prior to date of departure to be cleared and packaged by AMS.</div>
+      </label>
+      <label class="agreement-item" id="agr3" onclick="toggleAgreement(3)">
+        <input type="checkbox" id="agr3cb">
+        <div class="agreement-cb"></div>
+        <div class="agreement-text">General cargo will be at AMS NLT 24 hours prior to date of departure to be cleared and packaged by AMS.</div>
+      </label>
+      <label class="agreement-item" id="agr4" onclick="toggleAgreement(4)">
+        <input type="checkbox" id="agr4cb">
+        <div class="agreement-cb"></div>
+        <div class="agreement-text">Completed PAX lists will be provided at the bottom of the ATR NLT 48 hours prior to date of departure.</div>
+      </label>
+    </div>
+
+    <div style="margin-top:20px">
+      <button onclick="acceptAllAgreements()" style="background:none;border:1px solid var(--border-bright);color:var(--text-dim);padding:8px 16px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.8rem;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase;transition:all 0.2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border-bright)';this.style.color='var(--text-dim)'">
+        ✓ Accept All
+      </button>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="prevStep()">← Back</button>
+      <button class="btn-next" onclick="nextStep()">Next: PAX List →</button>
+    </div>
+  </div>
+
+  <!-- ============ STEP 5: PAX LIST ============ -->
+  <div class="section-card" id="step-5">
+    <div class="section-header">
+      <div class="section-num">PAX</div>
+      <div>
+        <div class="section-title">Passenger List</div>
+        <div class="section-sub">ATO # and route — NLT 48hrs prior to departure</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="grid-2">
+        <div class="field">
+          <label>ATO Number</label>
+          <input type="text" id="atoNumber" placeholder="To be added by SO3 Air Prep">
+        </div>
+        <div class="field">
+          <label>Route</label>
+          <input type="text" id="paxRoute" placeholder="e.g. AYPY-AYNZ" style="text-transform:uppercase">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Passengers (up to 30)</div>
+      <div class="pax-table-wrap">
+        <table class="pax-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Service #</th>
+              <th>Rank</th>
+              <th>Name (SURNAME, First)</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Bags</th>
+              <th>Bag Wt (kg)</th>
+              <th>PAX Wt (kg)</th>
+            </tr>
+          </thead>
+          <tbody id="paxTableBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding:8px;color:var(--gold);font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;background:var(--navy-light)">Total Passengers:</td>
+              <td colspan="3" style="background:var(--navy-light);padding:8px"><input type="number" id="totalPax" placeholder="0" style="background:transparent;border:none;color:var(--text);font-size:0.85rem;width:100%;outline:none"></td>
+              <td style="background:var(--navy-light)"></td>
+              <td style="padding:8px;background:var(--navy-light)"><input type="number" id="totalBagWt" placeholder="0" style="background:transparent;border:none;color:var(--text);font-size:0.85rem;width:100%;outline:none"></td>
+              <td style="padding:8px;background:var(--navy-light)"><input type="number" id="totalPaxWt" placeholder="0" style="background:transparent;border:none;color:var(--text);font-size:0.85rem;width:100%;outline:none"></td>
+            </tr>
+            <tr>
+              <td colspan="3" style="padding:8px;color:var(--steel-light);font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;background:var(--navy-light)">Base Unit Preparing Manifest:</td>
+              <td colspan="6" style="background:var(--navy-light);padding:8px"><input type="text" id="baseUnit" placeholder="Unit name" style="background:transparent;border:none;color:var(--text);font-size:0.85rem;width:100%;outline:none"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="prevStep()">← Back</button>
+      <button class="btn-next" onclick="nextStep()">Next: Authorisation →</button>
+    </div>
+  </div>
+
+  <!-- ============ STEP 6: AUTHORISATION ============ -->
+  <div class="section-card" id="step-6">
+    <div class="section-header">
+      <div class="section-num">7–9</div>
+      <div>
+        <div class="section-title">Authorisation & Approval</div>
+        <div class="section-sub">Chain of command sign-off</div>
+      </div>
+      <div class="office-only-badge">Office Use Only</div>
+    </div>
+
+    <!-- Section 7: Supporting Comments -->
+    <div class="field-group">
+      <div class="field-group-title">Section 7 — Supporting Comments</div>
+      <div class="field">
+        <label>Comments</label>
+        <textarea id="supportingComments" rows="3" placeholder="Supporting comments from SO3 Air Prep…"></textarea>
+      </div>
+    </div>
+
+    <!-- Section 8: PNGDF Recommendation -->
+    <div class="field-group">
+      <div class="field-group-title">Section 8 — PNGDF Recommendation</div>
+
+      <div style="margin-bottom:16px">
+        <label>D Air PNGDF Signature</label>
+        <div class="sig-wrap">
+          <div class="sig-label">Sign below using mouse or touch</div>
+          <canvas class="sig-canvas" id="sig-dair" width="800" height="100"></canvas>
+          <div class="sig-controls">
+            <span class="sig-hint">Draw signature</span>
+            <button class="btn-clear-sig" onclick="clearSig('sig-dair')">Clear</button>
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <label>Date</label>
+          <input type="date" id="dairDate">
+        </div>
+      </div>
+
+      <div>
+        <label>COMD PNGDF Endorsement Signature</label>
+        <div class="sig-wrap">
+          <div class="sig-label">Sign below using mouse or touch</div>
+          <canvas class="sig-canvas" id="sig-comd" width="800" height="100"></canvas>
+          <div class="sig-controls">
+            <span class="sig-hint">Draw signature</span>
+            <button class="btn-clear-sig" onclick="clearSig('sig-comd')">Clear</button>
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <label>Date</label>
+          <input type="date" id="comdDate">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Non-PNGDF Agency / Contingency Operations Comments</label>
+        <textarea id="nonPNGDFComments" rows="2" placeholder="For non-PNGDF agency or contingency operations…"></textarea>
+      </div>
+    </div>
+
+    <!-- Section 9: ADS Approving Authority -->
+    <div class="field-group">
+      <div class="field-group-title">Section 9 — ADS Approving Authority</div>
+      <div class="info-box" style="margin-bottom:14px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div style="font-size:0.72rem">SO2 Avn Authority & ADS SO1 OPS delegated as Commonwealth Representative Approving Authority for routine aviation tasking. DCP TM LDR is Approving Authority for Fixed Wing requests.</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label>SO2 Avn Authority Signature</label>
+        <div class="sig-wrap">
+          <canvas class="sig-canvas" id="sig-so2" width="800" height="100"></canvas>
+          <div class="sig-controls">
+            <span class="sig-hint">Draw signature</span>
+            <button class="btn-clear-sig" onclick="clearSig('sig-so2')">Clear</button>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:8px;gap:10px">
+          <div class="field"><label>Date</label><input type="date" id="so2Date"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label>DCP TM LDR Recommendation Signature</label>
+        <div class="sig-wrap">
+          <canvas class="sig-canvas" id="sig-dcp" width="800" height="100"></canvas>
+          <div class="sig-controls">
+            <span class="sig-hint">Draw signature</span>
+            <button class="btn-clear-sig" onclick="clearSig('sig-dcp')">Clear</button>
+          </div>
+        </div>
+        <div style="margin-top:8px"><label>Date</label><input type="date" id="dcpDate"></div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label>HADS Approval Signature</label>
+        <div class="sig-wrap">
+          <canvas class="sig-canvas" id="sig-hads" width="800" height="100"></canvas>
+          <div class="sig-controls">
+            <span class="sig-hint">Draw signature</span>
+            <button class="btn-clear-sig" onclick="clearSig('sig-hads')">Clear</button>
+          </div>
+        </div>
+        <div style="margin-top:8px"><label>Date</label><input type="date" id="hadsDate"></div>
+      </div>
+
+      <div class="field">
+        <label>Direction and Guidance</label>
+        <textarea id="directionGuidance" rows="3" placeholder="Direction and guidance from approving authority…"></textarea>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="prevStep()">← Back</button>
+      <button class="btn-next" onclick="nextStep()">Next: Submit →</button>
+    </div>
+  </div>
+
+  <!-- ============ STEP 7: SUBMIT ============ -->
+  <div class="section-card" id="step-7">
+    <div class="section-header">
+      <div class="section-num">✓</div>
+      <div>
+        <div class="section-title">Review & Submit</div>
+        <div class="section-sub">Save to Google Drive or download</div>
+      </div>
+    </div>
+
+    <div class="drive-section">
+      <svg width="40" height="40" viewBox="0 0 87.3 78" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto 12px">
+        <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5l5.4 9.35z" fill="#0066da"/>
+        <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 00-1.2 4.5h27.5l16.15-28z" fill="#00ac47"/>
+        <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H60l5.85 11.65 7.7 12.15z" fill="#ea4335"/>
+        <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832d"/>
+        <path d="M60 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2L60 53z" fill="#2684fc"/>
+        <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 60 53h27.45c0-1.55-.4-3.1-1.2-4.5l-12.85-22z" fill="#ffba00"/>
+      </svg>
+      <h3>Save to Google Drive</h3>
+      <p>Authorize with your Google account to save this ATR directly to your Drive. The form data will be saved as a structured JSON file that can be shared with SO3 Air Prep.</p>
+      <button class="btn-drive" onclick="saveToGoogleDrive()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Connect & Save to Google Drive
+      </button>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">Or Download / Email</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn-icon" style="padding:10px 16px;font-size:0.8rem" onclick="downloadJSON()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Download JSON
+        </button>
+        <button class="btn-icon" style="padding:10px 16px;font-size:0.8rem" onclick="emailForm()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email to ATR Inbox
+        </button>
+        <button class="btn-icon" style="padding:10px 16px;font-size:0.8rem" onclick="printForm()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print / PDF
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-back" onclick="prevStep()">← Back</button>
+      <button class="btn-submit" onclick="submitATR()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Submit ATR
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ SUCCESS SCREEN ============ -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">✓</div>
+    <h2>ATR Submitted</h2>
+    <p>Your Air Task Request has been submitted successfully. Please retain your reference number for tracking.</p>
+    <div class="atr-ref" id="atrRef">ATR-2026-0304-001</div>
+    <p style="font-size:0.72rem;color:var(--text-dim);margin-bottom:24px">A copy will be sent to <strong style="color:var(--steel-light)">Pngdf.atr@outlook.com</strong></p>
+    <div class="success-actions">
+      <button class="btn-drive" onclick="saveToGoogleDrive()">
+        Save to Google Drive
+      </button>
+      <button class="btn-icon" style="padding:12px 20px;font-size:0.82rem" onclick="startNew()">
+        Start New ATR
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✓</span>
+  <span id="toastMsg">Saved</span>
+</div>
+
+<script>
+// ===================== STATE =====================
+let currentStep = 0;
+const totalSteps = 8;
+let sigPads = {};
+
+// ===================== NAVIGATION =====================
+function goToStep(n) {
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  document.querySelectorAll('.step-pill')[currentStep].classList.remove('active');
+  document.querySelectorAll('.step-pill')[currentStep].classList.add('completed');
+  currentStep = n;
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+  document.querySelectorAll('.step-pill')[currentStep].classList.add('active');
+  document.querySelectorAll('.step-pill')[currentStep].classList.remove('completed');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Resize all canvases when showing auth step
+  if (currentStep === 6) {
+    setTimeout(() => Object.values(sigPads).forEach(p => p.resize()), 100);
+  }
+}
+
+function nextStep() {
+  if (currentStep < totalSteps - 1) goToStep(currentStep + 1);
+}
+function prevStep() {
+  if (currentStep > 0) goToStep(currentStep - 1);
+}
+
+// ===================== SIGNATURE PAD =====================
+class SigPad {
+  constructor(canvasId) {
+    this.canvas = document.getElementById(canvasId);
+    this.ctx = this.canvas.getContext('2d');
+    this.drawing = false;
+    this.lastX = 0;
+    this.lastY = 0;
+    this.resize();
+    this.bind();
+  }
+
+  resize() {
+    const rect = this.canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = 100 * dpr;
+    this.ctx.scale(dpr, dpr);
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = '100px';
+    this.ctx.strokeStyle = '#c9a84c';
+    this.ctx.lineWidth = 2;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+  }
+
+  getXY(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return [(t.clientX - rect.left), (t.clientY - rect.top)];
+  }
+
+  bind() {
+    const start = (e) => { e.preventDefault(); this.drawing = true; [this.lastX, this.lastY] = this.getXY(e); };
+    const move = (e) => {
+      if (!this.drawing) return;
+      e.preventDefault();
+      const [x, y] = this.getXY(e);
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.lastX, this.lastY);
+      this.ctx.lineTo(x, y);
+      this.ctx.stroke();
+      [this.lastX, this.lastY] = [x, y];
+    };
+    const end = () => { this.drawing = false; };
+    this.canvas.addEventListener('mousedown', start);
+    this.canvas.addEventListener('mousemove', move);
+    this.canvas.addEventListener('mouseup', end);
+    this.canvas.addEventListener('mouseleave', end);
+    this.canvas.addEventListener('touchstart', start, { passive: false });
+    this.canvas.addEventListener('touchmove', move, { passive: false });
+    this.canvas.addEventListener('touchend', end);
+  }
+
+  clear() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  toDataURL() {
+    return this.canvas.toDataURL();
+  }
+
+  isEmpty() {
+    const data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
+    return !data.some(v => v !== 0);
+  }
+}
+
+function clearSig(id) {
+  if (sigPads[id]) sigPads[id].clear();
+}
+
+// Init signature pads
+window.addEventListener('load', () => {
+  ['sig-dair', 'sig-comd', 'sig-so2', 'sig-dcp', 'sig-hads'].forEach(id => {
+    sigPads[id] = new SigPad(id);
+  });
+  buildPaxTable();
+  setDefaultDTG();
+  loadDraft();
+});
+
+window.addEventListener('resize', () => {
+  Object.values(sigPads).forEach(p => p.resize());
+});
+
+// ===================== DEFAULT VALUES =====================
+function setDefaultDTG() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const local = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('submissionDTG').value = local;
+}
+
+// ===================== PAX TABLE =====================
+function buildPaxTable() {
+  const tbody = document.getElementById('paxTableBody');
+  tbody.innerHTML = '';
+  for (let i = 1; i <= 30; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row-num">${i}</td>
+      <td><input type="text" placeholder="Service #" id="p${i}_svc"></td>
+      <td><input type="text" placeholder="Rank" id="p${i}_rank" style="width:70px"></td>
+      <td><input type="text" placeholder="SURNAME, First" id="p${i}_name"></td>
+      <td><input type="text" placeholder="AYPY" id="p${i}_from" style="text-transform:uppercase;width:70px"></td>
+      <td><input type="text" placeholder="AYNZ" id="p${i}_to" style="text-transform:uppercase;width:70px"></td>
+      <td><input type="number" placeholder="0" id="p${i}_bags" style="width:60px" min="0"></td>
+      <td><input type="number" placeholder="0" id="p${i}_bagwt" style="width:70px" min="0"></td>
+      <td><input type="number" placeholder="0" id="p${i}_paxwt" style="width:70px" min="0"></td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ===================== TOGGLE FUNCTIONS =====================
+function toggleVIP(show) {
+  document.getElementById('vipDetails').classList.toggle('visible', show);
+}
+function toggleDG(show) {
+  document.getElementById('dgDetails').classList.toggle('visible', show);
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'acftType') {
+    document.getElementById('acftOtherWrap').classList.toggle('visible', e.target.value === 'other');
+  }
+});
+
+// ===================== AGREEMENTS =====================
+function toggleAgreement(n) {
+  const el = document.getElementById(`agr${n}`);
+  el.classList.toggle('checked');
+}
+
+function acceptAllAgreements() {
+  for (let i = 0; i < 5; i++) {
+    document.getElementById(`agr${i}`).classList.add('checked');
+  }
+  showToast('All agreements accepted', 'success');
+}
+
+// ===================== COLLECT FORM DATA =====================
+function collectFormData() {
+  // PAX data
+  const pax = [];
+  for (let i = 1; i <= 30; i++) {
+    const name = document.getElementById(`p${i}_name`)?.value;
+    if (name) {
+      pax.push({
+        serial: i,
+        service: document.getElementById(`p${i}_svc`)?.value,
+        rank: document.getElementById(`p${i}_rank`)?.value,
+        name,
+        from: document.getElementById(`p${i}_from`)?.value,
+        to: document.getElementById(`p${i}_to`)?.value,
+        bags: document.getElementById(`p${i}_bags`)?.value,
+        bagWeight: document.getElementById(`p${i}_bagwt`)?.value,
+        paxWeight: document.getElementById(`p${i}_paxwt`)?.value,
+      });
+    }
+  }
+
+  const paxType = document.querySelector('input[name="paxType"]:checked')?.value;
+  const vip = document.querySelector('input[name="vip"]:checked')?.value;
+  const dg = document.querySelector('input[name="dg"]:checked')?.value;
+
+  return {
+    meta: {
+      version: '2.0',
+      submittedAt: new Date().toISOString(),
+      reference: generateRef(),
+    },
+    section1: {
+      unit: document.getElementById('unit')?.value,
+      submissionDTG: document.getElementById('submissionDTG')?.value,
+      primaryContact: {
+        name: document.getElementById('priName')?.value,
+        mobile: document.getElementById('priMobile')?.value,
+        email: document.getElementById('priEmail')?.value,
+      },
+      alternateContact: {
+        name: document.getElementById('altName')?.value,
+        mobile: document.getElementById('altMobile')?.value,
+        email: document.getElementById('altEmail')?.value,
+      },
+      taskDate: document.getElementById('taskDate')?.value,
+      taskDateLatest: document.getElementById('taskDateLatest')?.value,
+    },
+    section2: {
+      supportDescription: document.getElementById('supportDesc')?.value,
+      supportDTG: document.getElementById('supportDTG')?.value,
+      acftType: document.getElementById('acftType')?.value === 'other'
+        ? document.getElementById('acftOther')?.value
+        : document.getElementById('acftType')?.value,
+      locations: document.getElementById('locations')?.value,
+      departureICAO: document.getElementById('depICAO')?.value,
+      destinationICAO: document.getElementById('destICAO')?.value,
+    },
+    paxCargo: {
+      paxCount: document.getElementById('paxCount')?.value,
+      paxType,
+      vip,
+      vipTitle: vip === 'Y' ? document.getElementById('vipTitle')?.value : null,
+      dangerousGoods: dg,
+      dgDescription: dg === 'Y' ? document.getElementById('dgDesc')?.value : null,
+      cargoItems: document.getElementById('cargoItems')?.value,
+      cargoWeight: document.getElementById('cargoWeight')?.value,
+      cargoPieces: document.getElementById('cargoPieces')?.value,
+      specialInstructions: document.getElementById('specialInstructions')?.value,
+    },
+    rwSupport: {
+      pickupPoint: {
+        location: document.getElementById('puLocation')?.value,
+        lzDescription: document.getElementById('puLZ')?.value,
+        departureTime: document.getElementById('puTime')?.value,
+        callsign: document.getElementById('puCallsign')?.value,
+        frequency: document.getElementById('puFreq')?.value,
+      },
+      deliveryPoint: {
+        location: document.getElementById('dlLocation')?.value,
+        lzDescription: document.getElementById('dlLZ')?.value,
+        arrivalTime: document.getElementById('dlTime')?.value,
+        callsign: document.getElementById('dlCallsign')?.value,
+        frequency: document.getElementById('dlFreq')?.value,
+      },
+    },
+    passengerList: {
+      atoNumber: document.getElementById('atoNumber')?.value,
+      route: document.getElementById('paxRoute')?.value,
+      passengers: pax,
+      totalPax: document.getElementById('totalPax')?.value,
+      totalBagWeight: document.getElementById('totalBagWt')?.value,
+      totalPaxWeight: document.getElementById('totalPaxWt')?.value,
+      baseUnit: document.getElementById('baseUnit')?.value,
+    },
+    authorisation: {
+      supportingComments: document.getElementById('supportingComments')?.value,
+      dAirPNGDF: { date: document.getElementById('dairDate')?.value, signed: !sigPads['sig-dair']?.isEmpty() },
+      comdPNGDF: { date: document.getElementById('comdDate')?.value, signed: !sigPads['sig-comd']?.isEmpty() },
+      nonPNGDFComments: document.getElementById('nonPNGDFComments')?.value,
+      so2AvnAuthority: { date: document.getElementById('so2Date')?.value, signed: !sigPads['sig-so2']?.isEmpty() },
+      dcpTmLdr: { date: document.getElementById('dcpDate')?.value, signed: !sigPads['sig-dcp']?.isEmpty() },
+      hads: { date: document.getElementById('hadsDate')?.value, signed: !sigPads['sig-hads']?.isEmpty() },
+      directionGuidance: document.getElementById('directionGuidance')?.value,
+    },
+  };
+}
+
+// ===================== REFERENCE NUMBER =====================
+function generateRef() {
+  const now = new Date();
+  const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const r = Math.floor(Math.random() * 900) + 100;
+  return `ATR-${d}-${r}`;
+}
+
+// ===================== SAVE DRAFT =====================
+function saveDraft() {
+  try {
+    localStorage.setItem('atr_draft', JSON.stringify(collectFormData()));
+    showToast('Draft saved locally', 'success');
+  } catch(e) {
+    showToast('Could not save draft', 'error');
+  }
+}
+
+function loadDraft() {
+  try {
+    const d = localStorage.getItem('atr_draft');
+    if (!d) return;
+    // Optionally restore — silent load
+  } catch(e) {}
+}
+
+// ===================== DOWNLOAD JSON =====================
+function downloadJSON() {
+  const data = collectFormData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${data.meta.reference}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('ATR downloaded as JSON', 'success');
+}
+
+// ===================== EMAIL =====================
+function emailForm() {
+  const data = collectFormData();
+  const unit = document.getElementById('unit')?.value || '[Unit]';
+  const date = document.getElementById('taskDate')?.value || '[Date]';
+  const subject = encodeURIComponent(`ATR Submission — ${unit} — ${date}`);
+  const body = encodeURIComponent(`Please find attached the Air Task Request from ${unit}.\n\nReference: ${data.meta.reference}\nSubmitted: ${new Date().toLocaleString()}\n\nPlease process at your earliest convenience.\n\nSent via ATR Digital Form v2.0`);
+  window.open(`mailto:Pngdf.atr@outlook.com?subject=${subject}&body=${body}`);
+}
+
+// ===================== GOOGLE DRIVE =====================
+function saveToGoogleDrive() {
+  // Google Drive integration — requires OAuth2 client_id configuration
+  // In production, replace CLIENT_ID with your registered Google Cloud project OAuth2 client ID
+  // The form data will be saved as a JSON file to the user's Drive root folder
+
+  const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // ← Replace with your OAuth2 Client ID
+  const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+  if (CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+    showGDriveInstructions();
+    return;
+  }
+
+  // Load Google Identity Services
+  const script = document.createElement('script');
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.onload = () => initGoogleAuth(CLIENT_ID, SCOPES);
+  document.head.appendChild(script);
+}
+
+function showGDriveInstructions() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--panel);border:1px solid var(--border-bright);border-radius:12px;padding:28px;max-width:500px;width:100%">
+      <h3 style="font-family:'Rajdhani',sans-serif;color:var(--gold);font-size:1.1rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px">Google Drive Setup Required</h3>
+      <p style="font-size:0.82rem;color:var(--text-dim);line-height:1.6;margin-bottom:16px">To enable Google Drive saving, a Google Cloud OAuth2 Client ID needs to be configured by your IT administrator:</p>
+      <ol style="font-size:0.78rem;color:var(--text-dim);padding-left:20px;line-height:2">
+        <li>Go to <strong style="color:var(--steel-light)">console.cloud.google.com</strong></li>
+        <li>Create a project → Enable <strong style="color:var(--steel-light)">Google Drive API</strong></li>
+        <li>Create OAuth2 credentials → Web Application</li>
+        <li>Add your domain to authorized origins</li>
+        <li>Replace <strong style="color:var(--gold)">YOUR_GOOGLE_CLIENT_ID</strong> in this file</li>
+      </ol>
+      <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="this.closest('div[style]').remove();downloadJSON();" style="background:var(--navy-light);border:1px solid var(--border-bright);color:var(--text);padding:10px 18px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82rem;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">Download JSON Instead</button>
+        <button onclick="this.closest('div[style]').remove()" style="background:var(--steel);border:none;color:#fff;padding:10px 18px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82rem;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function initGoogleAuth(clientId, scopes) {
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: scopes,
+    callback: (resp) => {
+      if (resp.error) { showToast('Google auth failed', 'error'); return; }
+      uploadToDrive(resp.access_token);
+    }
+  });
+  tokenClient.requestAccessToken();
+}
+
+async function uploadToDrive(accessToken) {
+  const data = collectFormData();
+  const fileName = `${data.meta.reference}.json`;
+  const content = JSON.stringify(data, null, 2);
+
+  showToast('Uploading to Google Drive…', 'success');
+
+  // Create file metadata
+  const metadata = { name: fileName, mimeType: 'application/json', parents: ['root'] };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', new Blob([content], { type: 'application/json' }));
+
+  try {
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form
+    });
+    const json = await res.json();
+    if (json.id) {
+      showToast(`Saved: ${fileName}`, 'success');
+    } else {
+      showToast('Upload failed', 'error');
+    }
+  } catch(e) {
+    showToast('Upload error', 'error');
+  }
+}
+
+// ===================== PRINT =====================
+function printForm() {
+  window.print();
+}
+
+// ===================== SUBMIT =====================
+function submitATR() {
+  const unit = document.getElementById('unit')?.value;
+  if (!unit) { showToast('Please fill in the Requesting Unit (Step 1)', 'error'); goToStep(0); return; }
+
+  const ref = generateRef();
+  document.getElementById('atrRef').textContent = ref;
+
+  // Hide all steps
+  document.querySelectorAll('.section-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('successScreen').classList.add('success-screen', 'active');
+  document.getElementById('successScreen').style.display = 'block';
+
+  // Save draft one more time
+  saveDraft();
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('ATR submitted successfully!', 'success');
+}
+
+function startNew() {
+  if (confirm('Start a new ATR? Unsaved data will be lost.')) {
+    localStorage.removeItem('atr_draft');
+    location.reload();
+  }
+}
+
+// ===================== TOAST =====================
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  const msgEl = document.getElementById('toastMsg');
+  toast.className = `toast ${type}`;
+  icon.textContent = type === 'success' ? '✓' : '✕';
+  msgEl.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
