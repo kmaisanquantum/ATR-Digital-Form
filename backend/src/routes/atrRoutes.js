@@ -4,8 +4,8 @@ import { requireAuth, requireRoles } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-// Requesters can create, everyone authorized can read all or a single ATR
-router.post('/', requireAuth, requireRoles(['Requesting Unit']), createATR);
+// Open public submission model - no auth needed for creation
+router.post('/', createATR);
 router.get('/', requireAuth, listATRs);
 router.get('/:id', requireAuth, getATRById);
 

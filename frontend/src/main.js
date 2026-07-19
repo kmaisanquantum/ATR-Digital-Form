@@ -98,14 +98,47 @@ export function downloadJSON() {
   showToast('ATR downloaded as JSON', 'success');
 }
 
-// Open native mailto with filled details
+// Open native mailto with filled details and prompt attachment
 export function emailForm() {
   const data = collectFormData(sigPads);
   const unit = document.getElementById('unit')?.value || '[Unit]';
   const date = document.getElementById('taskDate')?.value || '[Date]';
+
+  // 1. Download JSON automatically
+  downloadJSON();
+
+  // 2. Open native mailto link
   const subject = encodeURIComponent(`ATR Submission — ${unit} — ${date}`);
-  const body = encodeURIComponent(`Please find attached the Air Task Request from ${unit}.\n\nReference: ${data.meta.reference}\nSubmitted: ${new Date().toLocaleString()}\n\nPlease process at your earliest convenience.\n\nSent via ATR Digital Form v2.0`);
+  const body = encodeURIComponent(`Please find attached the Air Task Request from ${unit}.\n\nReference: ${data.meta.reference}\nSubmitted: ${new Date().toLocaleString()}\n\nNote: Please attach the downloaded ${data.meta.reference || 'ATR'}.json file to this email before sending.\n\nSent via ATR Digital Form v2.0`);
   window.open(`mailto:Pngdf.atr@outlook.com?subject=${subject}&body=${body}`);
+
+  // 3. Concurrently display instruction modal
+  showEmailAttachmentInstructions(data.meta.reference || 'ATR');
+}
+
+function showEmailAttachmentInstructions(ref) {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--panel);border:1px solid var(--border-bright);border-radius:12px;padding:28px;max-width:500px;width:100%">
+      <h3 style="font-family:\'Rajdhani\',sans-serif;color:var(--gold);font-size:1.15rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px">Email Attachment Required</h3>
+      <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6;margin-bottom:16px">The ATR configuration file <strong>${ref}.json</strong> has been downloaded to your local computer.</p>
+      <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:0.8rem;color:var(--text);line-height:1.5;margin-bottom:16px;">
+        <strong>Instructions:</strong><br>
+        1. An email client window has been opened to <strong>Pngdf.atr@outlook.com</strong>.<br>
+        2. Please <strong>attach</strong> the downloaded file (<strong>${ref}.json</strong>) from your Downloads folder to that email.<br>
+        3. Send the email to submit your request to the movements cell.
+      </div>
+      <div style="margin-top:20px;display:flex;justify-content:flex-end">
+        <button id="email-modal-close-btn" style="background:var(--steel);border:none;color:#fff;padding:10px 20px;border-radius:6px;font-family:\'Rajdhani\',sans-serif;font-weight:600;font-size:0.85rem;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">I Understand</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('email-modal-close-btn').onclick = () => {
+    modal.remove();
+  };
 }
 
 // Print page trigger
@@ -126,11 +159,91 @@ export function startNew() {
   }
 }
 
-// Save to Google Drive placeholders
+// Upgraded Google Drive Integration Logic with Fallback Mode
 export function saveToGoogleDrive() {
-  showToast('Google Drive connector initialized…', 'success');
-  // For standard static backwards-compatibility support, render setup guidance dialog
-  showGDriveInstructions();
+  const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+  if (!CLIENT_ID) {
+    showGDriveInstructions();
+    return;
+  }
+
+  showToast('Connecting to Google Drive…', 'success');
+
+  // Load Google Identity Services dynamically if not already loaded
+  if (typeof google === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.onload = () => {
+      initGoogleAuth(CLIENT_ID, SCOPES);
+    };
+    script.onerror = () => {
+      showToast('Failed to load Google client library', 'error');
+    };
+    document.head.appendChild(script);
+  } else {
+    initGoogleAuth(CLIENT_ID, SCOPES);
+  }
+}
+
+function initGoogleAuth(clientId, scopes) {
+  try {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: scopes,
+      callback: (resp) => {
+        if (resp.error) {
+          showToast('Google auth failed: ' + resp.error, 'error');
+          return;
+        }
+        uploadToDrive(resp.access_token);
+      }
+    });
+    tokenClient.requestAccessToken();
+  } catch (err) {
+    showToast('Failed to initiate Google auth client', 'error');
+  }
+}
+
+async function uploadToDrive(accessToken) {
+  const data = collectFormData(sigPads);
+  const fileName = `${data.meta?.reference || 'ATR'}.json`;
+  const content = JSON.stringify(data, null, 2);
+
+  showToast('Uploading to Google Drive…', 'success');
+
+  // Create multipart file upload request
+  const metadata = {
+    name: fileName,
+    mimeType: 'application/json',
+    parents: ['root']
+  };
+
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', new Blob([content], { type: 'application/json' }));
+
+  try {
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: form
+    });
+
+    if (!res.ok) {
+      throw new Error(`Google Drive API returned ${res.status}`);
+    }
+
+    const json = await res.json();
+    if (json.id) {
+      showToast(`Saved: ${fileName}`, 'success');
+    } else {
+      showToast('Google Drive upload failed', 'error');
+    }
+  } catch(e) {
+    showToast('Google Drive upload error: ' + e.message, 'error');
+  }
 }
 
 function showGDriveInstructions() {
@@ -145,7 +258,7 @@ function showGDriveInstructions() {
         <li>Create a project → Enable <strong style="color:var(--steel-light)">Google Drive API</strong></li>
         <li>Create OAuth2 credentials → Web Application</li>
         <li>Add your domain to authorized origins</li>
-        <li>Replace CLIENT_ID in api client settings</li>
+        <li>Configure VITE_GOOGLE_CLIENT_ID environment variable</li>
       </ol>
       <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
         <button id="modal-download-json-btn" style="background:var(--navy-light);border:1px solid var(--border-bright);color:var(--text);padding:10px 18px;border-radius:6px;font-family:\'Rajdhani\',sans-serif;font-weight:600;font-size:0.82rem;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">Download JSON Instead</button>
@@ -164,7 +277,7 @@ function showGDriveInstructions() {
   };
 }
 
-// Central ATR submission pipeline (Supports full Offline and online queues)
+// Central ATR submission pipeline (Supports full Offline and online queues with precise error checking)
 export async function submitATR() {
   const unit = document.getElementById('unit')?.value;
   if (!unit) {
@@ -197,12 +310,20 @@ export async function submitATR() {
     showToast('ATR submitted successfully!', 'success');
     showSuccessScreen(ref);
   } catch (err) {
-    // If submission failed due to network glitch, fall back to offline queue
-    try {
-      await queueOfflineATR(data);
-      showToast('Submission error. Saved locally to sync queue.', 'success');
-      showSuccessScreen(ref);
-    } catch (dbErr) {
+    // Differentiate between network dropout/TypeError and actual server validation/HTTP error (4xx/5xx)
+    const isNetworkError = !navigator.onLine || err.name === 'TypeError' || err.message.includes('Failed to fetch');
+
+    if (isNetworkError) {
+      try {
+        await queueOfflineATR(data);
+        showToast('Submission error. Saved locally to sync queue.', 'success');
+        showSuccessScreen(ref);
+      } catch (dbErr) {
+        showToast('Error storing ATR offline', 'error');
+      }
+    } else {
+      // Valid server rejection (e.g., duplicate ref or database validation failure)
+      // Do NOT queue offline, do NOT show success screen, project real error to user
       showToast(err.message || 'Error submitting ATR', 'error');
     }
   }
@@ -313,12 +434,9 @@ export async function selectAtrForApproval(id) {
   currentSelectedAtrId = id;
 
   // Refresh highlighting on list
-  const items = document.getElementById('approvals-list-container').children;
-  // Re-load list structure is simpler to keep in sync:
   const container = document.getElementById('approvals-list-container');
   if (container) {
     Array.from(container.children).forEach(child => {
-      // Find the item corresponding to id and apply style
       const clickHandlerStr = child.onclick ? child.onclick.toString() : '';
       if (clickHandlerStr.includes(id)) {
         child.style.borderColor = 'var(--gold)';
