@@ -90,10 +90,10 @@ This serves the application on:
 - Backend REST API: `http://localhost:5000`
 
 ### 4. Database Setup & Prisma Migrations
-Generate Prisma Client and push schemas to the database instance:
+Generate Prisma Client and run migrations on the database instance:
 ```bash
 cd backend
-npx prisma db push
+npx prisma migrate dev
 ```
 
 ---
