@@ -104,3 +104,55 @@ npx prisma migrate dev
 2. If **online**, the data is pushed directly to the Express server API `/api/atrs`.
 3. If **offline** (or if a connection failure is caught), the form payload is captured, stored as a record in **IndexedDB** (`sync_queue`), and a friendly offline notice is shown.
 4. When connectivity is restored (the window hears the `online` event listener), the client auto-retrieves all queued items from IndexedDB and synchronizes them background-transparently.
+
+---
+
+## Coolify Deployment Guide
+
+This project is fully structured to be deployed seamlessly as a modern multi-service stack on **Coolify**.
+
+### Dual-Route Deployment Strategies
+
+Deployment engineers can choose between two robust deployment options depending on resource requirements:
+
+#### Option A: Unified Application Stack (Recommended)
+Point Coolify directly to the unified `docker-compose.prod.yml` configuration matrix located at the root of the repository.
+
+1. Create a new **Docker Compose** application in Coolify.
+2. Link your Git Repository and select the `main` branch.
+3. Configure the config file path to point to `docker-compose.prod.yml`.
+4. Define your environment variables in Coolify if necessary (though standard production defaults are configured).
+5. Deploy. Coolify will dynamically orchestrate the PostgreSQL DB, the Express backend API (port 5000), and the multi-stage Nginx-served Vite frontend (port 3000), linking them seamlessly.
+
+#### Option B: Isolated Services Route
+Alternatively, provision two distinct service applications on Coolify to scale them independently.
+
+##### 1. Backend Service
+- **Application Type**: Private App or Dockerfile App.
+- **Base Directory**: `backend`
+- **Build Pack**: `dockerfile`
+- **Build Command**: Leave empty or let Coolify auto-detect.
+- **Start Command**: `sh -c "npx prisma migrate deploy || npx prisma db push && node src/index.js"` (Do NOT leave this blank. You must explicitly override the start command with this non-empty migration synchronization command sequence).
+- **Exposed Port**: `5000`
+- **Environment Variables**:
+  - `DATABASE_URL`: Connection string to your production database.
+  - `JWT_SECRET`: Safe JWT key.
+  - `PORT`: `5000`
+
+##### 2. Frontend Service
+- **Application Type**: Static/Nginx or Dockerfile App.
+- **Base Directory**: `frontend`
+- **Build Pack**: `dockerfile`
+- **Build Command**: Let Coolify build using the multi-stage `frontend/Dockerfile`.
+- **Start Command**: `nginx -g "daemon off;"` (Do NOT leave this blank. Overriding the default empty Start Command is necessary to avoid continuous container restart loop rejections in Coolify).
+- **Exposed Port**: `80` (mapped to external HTTP traffic).
+- **Environment Variables**:
+  - `VITE_API_BASE`: Set to the fully qualified domain or URL of your deployed backend service (e.g. `https://api.yourdomain.com`).
+
+---
+
+### ⚠️ CRITICAL WARNING FOR COOLIFY ENGINEERS
+
+> **Never leave the "Start Command" empty in the Coolify configuration forms!**
+>
+> Coolify deployments will enter an infinite crash/restart loop with the error `/bin/bash: -c: option requires an argument` if the start command is left blank or empty. You must explicitly override the default empty form fields with the non-empty start commands documented above (`nginx -g "daemon off;"` for frontend, and the migration sequence + `node src/index.js` for backend).

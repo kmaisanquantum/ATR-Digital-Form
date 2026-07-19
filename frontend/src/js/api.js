@@ -1,6 +1,6 @@
 import { getToken } from './auth.js';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && window._env_?.API_URL) || '/api';
 
 // Initialize IndexedDB for storing offline sync queues
 function initDB() {

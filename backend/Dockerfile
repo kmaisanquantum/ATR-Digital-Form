@@ -16,4 +16,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy || npx prisma db push && node src/index.js"]
