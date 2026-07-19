@@ -151,6 +151,19 @@ Alternatively, provision two distinct service applications on Coolify to scale t
 
 ---
 
+### Production Architectural Recommendation (Static Serving)
+
+Serving Vite frontend applications via the `vite preview` server in production is not recommended for high-performance pipelines.
+
+**Recommendation:** Serve the raw compiled static output files (`dist/`) directly using a dedicated, high-performance web server container layer (e.g., `nginx:alpine` or a lightweight static provider) as defined in our multi-stage `frontend/Dockerfile` and `docker-compose.prod.yml`.
+
+This represents a cleaner and more secure production deployment strategy because:
+1. It eliminates Node.js runtime overhead and memory footprints.
+2. It entirely bypasses Node-based host-checking dependencies, avoiding any `"Blocked request. This host (domain) is not allowed."` errors.
+3. Static files are served with optimized gzip/brotli compression, cache-control headers, and high concurrency natively provided by Nginx.
+
+---
+
 ### ⚠️ CRITICAL WARNING FOR COOLIFY ENGINEERS
 
 > **Never leave the "Start Command" empty in the Coolify configuration forms!**
