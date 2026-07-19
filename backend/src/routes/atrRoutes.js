@@ -5,7 +5,7 @@ import { requireAuth, requireRoles } from '../middleware/authMiddleware.js';
 const router = Router();
 
 // Requesters can create, everyone authorized can read all or a single ATR
-router.post('/', requireAuth, createATR);
+router.post('/', requireAuth, requireRoles(['Requesting Unit']), createATR);
 router.get('/', requireAuth, listATRs);
 router.get('/:id', requireAuth, getATRById);
 

@@ -755,6 +755,20 @@
       <p>PNGDF Aviation Support — Version 2.0</p>
     </div>
     <div class="header-actions">
+      <!-- Auth Status / Logout Section -->
+      <div id="auth-user-status-section" style="display: none; align-items: center; gap: 12px; margin-right: 12px;">
+        <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">
+          Role: <strong id="auth-user-role" style="color: var(--gold);">None</strong> |
+          User: <span id="auth-user-email">guest</span>
+        </span>
+        <button class="btn-icon" id="approvals-nav-btn" onclick="toggleApprovalsView()" style="display: none;">
+          <span>Approvals</span>
+        </button>
+        <button class="btn-icon" onclick="handleLogout()">
+          <span>Logout</span>
+        </button>
+      </div>
+
       <button class="btn-icon" onclick="printForm()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         <span>Print</span>
@@ -782,6 +796,63 @@
 </div>
 
 <main class="main" id="mainContent">
+
+  <!-- ============ AUTH / LOGIN SECTION ============ -->
+  <div id="auth-login-section" class="section-card active" style="margin-bottom: 24px;">
+    <div class="field-group" style="max-width: 480px; margin: 40px auto; padding: 24px;">
+      <div class="field-group-title" style="font-size: 1.1rem; color: var(--gold); margin-bottom: 20px; justify-content: center;">
+        PNGDF Aviation Authentication
+      </div>
+
+      <!-- Tab switchers -->
+      <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+        <button id="auth-tab-login" onclick="switchAuthTab('login')" style="flex: 1; background: none; border: none; color: var(--gold); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; cursor: pointer; border-bottom: 2px solid var(--gold); padding: 6px 0;">Login</button>
+        <button id="auth-tab-register" onclick="switchAuthTab('register')" style="flex: 1; background: none; border: none; color: var(--text-dim); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; cursor: pointer; padding: 6px 0;">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-login" onsubmit="handleLogin(event)">
+        <div class="field">
+          <label for="login-email">Username / Email <span class="req">*</span></label>
+          <input type="text" id="login-email" placeholder="e.g. requester@pngdf.mil.pg" required>
+        </div>
+        <div class="field" style="margin-top: 14px;">
+          <label for="login-password">Password <span class="req">*</span></label>
+          <input type="password" id="login-password" placeholder="••••••••" style="width: 100%; background: var(--input-bg); border: 1px solid var(--border-bright); border-radius: 6px; color: var(--text); padding: 10px 12px; outline: none;" required>
+        </div>
+        <button type="submit" class="btn-next" style="width: 100%; margin-top: 20px; justify-content: center; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); color: #000;">
+          Authenticate
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="form-register" onsubmit="handleRegister(event)" style="display: none;">
+        <div class="field">
+          <label for="reg-email">Username / Email <span class="req">*</span></label>
+          <input type="text" id="reg-email" placeholder="e.g. ams@pngdf.mil.pg" required>
+        </div>
+        <div class="field" style="margin-top: 14px;">
+          <label for="reg-password">Password <span class="req">*</span></label>
+          <input type="password" id="reg-password" placeholder="••••••••" style="width: 100%; background: var(--input-bg); border: 1px solid var(--border-bright); border-radius: 6px; color: var(--text); padding: 10px 12px; outline: none;" required>
+        </div>
+        <div class="field" style="margin-top: 14px;">
+          <label for="reg-role">Role <span class="req">*</span></label>
+          <select id="reg-role" required>
+            <option value="">— Select your PNGDF Stakeholder Role —</option>
+            <option value="Requesting Unit">Requesting Unit</option>
+            <option value="AMS">AMS</option>
+            <option value="SO3 Air Prep">SO3 Air Prep</option>
+            <option value="D Air">D Air</option>
+            <option value="COMD">COMD</option>
+            <option value="ADS">ADS</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-next" style="width: 100%; margin-top: 20px; justify-content: center; background: linear-gradient(135deg, var(--success), #2ecc71); color: #fff;">
+          Register Account
+        </button>
+      </form>
+    </div>
+  </div>
 
   <!-- ============ STEP 0: REQUESTING UNIT ============ -->
   <div class="section-card active" id="step-0">
@@ -1418,6 +1489,52 @@
     </div>
   </div>
 
+  <!-- ============ APPROVALS DASHBOARD VIEW ============ -->
+  <div id="approvals-view" style="display: none; animation: slideIn 0.3s ease;">
+    <div class="section-header">
+      <div class="section-num">A</div>
+      <div>
+        <div class="section-title">Multi-Stakeholder Approval Dashboard</div>
+        <div class="section-sub">Endorse, recommend, and approve active Air Task Requests</div>
+      </div>
+      <button class="btn-icon" onclick="closeApprovalsView()" style="margin-left: auto;">
+        <span>← Back to Form</span>
+      </button>
+    </div>
+
+    <!-- Filter Buttons or info -->
+    <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;">
+      <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700;">Filter Status:</span>
+      <button class="btn-icon" onclick="loadApprovalsList('')" style="padding: 4px 8px; font-size: 0.65rem;">All</button>
+      <button class="btn-icon" onclick="loadApprovalsList('AMS')" style="padding: 4px 8px; font-size: 0.65rem; color: var(--gold);">Awaiting AMS</button>
+      <button class="btn-icon" onclick="loadApprovalsList('SO3_AIR_PREP')" style="padding: 4px 8px; font-size: 0.65rem; color: var(--gold);">Awaiting SO3 Air Prep</button>
+      <button class="btn-icon" onclick="loadApprovalsList('D_AIR')" style="padding: 4px 8px; font-size: 0.65rem; color: var(--gold);">Awaiting D Air</button>
+      <button class="btn-icon" onclick="loadApprovalsList('COMD')" style="padding: 4px 8px; font-size: 0.65rem; color: var(--gold);">Awaiting COMD</button>
+      <button class="btn-icon" onclick="loadApprovalsList('ADS')" style="padding: 4px 8px; font-size: 0.65rem; color: var(--gold);">Awaiting ADS</button>
+    </div>
+
+    <!-- Split Pane Layout -->
+    <div style="display: grid; grid-template-columns: 1fr 2.2fr; gap: 20px; min-height: 500px;">
+
+      <!-- Left Panel: ATR list -->
+      <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; overflow-y: auto; max-height: 800px;">
+        <div class="field-group-title" style="margin-bottom: 12px;">Active Requests</div>
+        <div id="approvals-list-container" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Active ATR items will be rendered here dynamically -->
+          <div style="font-size: 0.8rem; text-align: center; color: var(--text-dim); padding: 40px 0;">No active ATRs found.</div>
+        </div>
+      </div>
+
+      <!-- Right Panel: ATR details and Action Sign-off -->
+      <div id="approvals-detail-panel" style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 300px; color: var(--text-dim); font-size: 0.85rem;">
+          Select an Air Task Request from the list to view details and capture signature.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </main>
 
 <!-- TOAST -->
@@ -1426,463 +1543,39 @@
   <span id="toastMsg">Saved</span>
 </div>
 
+<script type="module" src="/src/main.js"></script>
 <script>
-// ===================== STATE =====================
-let currentStep = 0;
-const totalSteps = 8;
-let sigPads = {};
+  function switchAuthTab(tab) {
+    const loginForm = document.getElementById('form-login');
+    const registerForm = document.getElementById('form-register');
+    const loginTab = document.getElementById('auth-tab-login');
+    const registerTab = document.getElementById('auth-tab-register');
 
-// ===================== NAVIGATION =====================
-function goToStep(n) {
-  document.getElementById(`step-${currentStep}`).classList.remove('active');
-  document.querySelectorAll('.step-pill')[currentStep].classList.remove('active');
-  document.querySelectorAll('.step-pill')[currentStep].classList.add('completed');
-  currentStep = n;
-  document.getElementById(`step-${currentStep}`).classList.add('active');
-  document.querySelectorAll('.step-pill')[currentStep].classList.add('active');
-  document.querySelectorAll('.step-pill')[currentStep].classList.remove('completed');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  // Resize all canvases when showing auth step
-  if (currentStep === 6) {
-    setTimeout(() => Object.values(sigPads).forEach(p => p.resize()), 100);
-  }
-}
-
-function nextStep() {
-  if (currentStep < totalSteps - 1) goToStep(currentStep + 1);
-}
-function prevStep() {
-  if (currentStep > 0) goToStep(currentStep - 1);
-}
-
-// ===================== SIGNATURE PAD =====================
-class SigPad {
-  constructor(canvasId) {
-    this.canvas = document.getElementById(canvasId);
-    this.ctx = this.canvas.getContext('2d');
-    this.drawing = false;
-    this.lastX = 0;
-    this.lastY = 0;
-    this.resize();
-    this.bind();
-  }
-
-  resize() {
-    const rect = this.canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-    this.canvas.width = rect.width * dpr;
-    this.canvas.height = 100 * dpr;
-    this.ctx.scale(dpr, dpr);
-    this.canvas.style.width = rect.width + 'px';
-    this.canvas.style.height = '100px';
-    this.ctx.strokeStyle = '#c9a84c';
-    this.ctx.lineWidth = 2;
-    this.ctx.lineCap = 'round';
-    this.ctx.lineJoin = 'round';
-  }
-
-  getXY(e) {
-    const rect = this.canvas.getBoundingClientRect();
-    const t = e.touches ? e.touches[0] : e;
-    return [(t.clientX - rect.left), (t.clientY - rect.top)];
-  }
-
-  bind() {
-    const start = (e) => { e.preventDefault(); this.drawing = true; [this.lastX, this.lastY] = this.getXY(e); };
-    const move = (e) => {
-      if (!this.drawing) return;
-      e.preventDefault();
-      const [x, y] = this.getXY(e);
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.lastX, this.lastY);
-      this.ctx.lineTo(x, y);
-      this.ctx.stroke();
-      [this.lastX, this.lastY] = [x, y];
-    };
-    const end = () => { this.drawing = false; };
-    this.canvas.addEventListener('mousedown', start);
-    this.canvas.addEventListener('mousemove', move);
-    this.canvas.addEventListener('mouseup', end);
-    this.canvas.addEventListener('mouseleave', end);
-    this.canvas.addEventListener('touchstart', start, { passive: false });
-    this.canvas.addEventListener('touchmove', move, { passive: false });
-    this.canvas.addEventListener('touchend', end);
-  }
-
-  clear() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-  }
-
-  toDataURL() {
-    return this.canvas.toDataURL();
-  }
-
-  isEmpty() {
-    const data = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
-    return !data.some(v => v !== 0);
-  }
-}
-
-function clearSig(id) {
-  if (sigPads[id]) sigPads[id].clear();
-}
-
-// Init signature pads
-window.addEventListener('load', () => {
-  ['sig-dair', 'sig-comd', 'sig-so2', 'sig-dcp', 'sig-hads'].forEach(id => {
-    sigPads[id] = new SigPad(id);
-  });
-  buildPaxTable();
-  setDefaultDTG();
-  loadDraft();
-});
-
-window.addEventListener('resize', () => {
-  Object.values(sigPads).forEach(p => p.resize());
-});
-
-// ===================== DEFAULT VALUES =====================
-function setDefaultDTG() {
-  const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const local = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  document.getElementById('submissionDTG').value = local;
-}
-
-// ===================== PAX TABLE =====================
-function buildPaxTable() {
-  const tbody = document.getElementById('paxTableBody');
-  tbody.innerHTML = '';
-  for (let i = 1; i <= 30; i++) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="row-num">${i}</td>
-      <td><input type="text" placeholder="Service #" id="p${i}_svc"></td>
-      <td><input type="text" placeholder="Rank" id="p${i}_rank" style="width:70px"></td>
-      <td><input type="text" placeholder="SURNAME, First" id="p${i}_name"></td>
-      <td><input type="text" placeholder="AYPY" id="p${i}_from" style="text-transform:uppercase;width:70px"></td>
-      <td><input type="text" placeholder="AYNZ" id="p${i}_to" style="text-transform:uppercase;width:70px"></td>
-      <td><input type="number" placeholder="0" id="p${i}_bags" style="width:60px" min="0"></td>
-      <td><input type="number" placeholder="0" id="p${i}_bagwt" style="width:70px" min="0"></td>
-      <td><input type="number" placeholder="0" id="p${i}_paxwt" style="width:70px" min="0"></td>
-    `;
-    tbody.appendChild(tr);
-  }
-}
-
-// ===================== TOGGLE FUNCTIONS =====================
-function toggleVIP(show) {
-  document.getElementById('vipDetails').classList.toggle('visible', show);
-}
-function toggleDG(show) {
-  document.getElementById('dgDetails').classList.toggle('visible', show);
-}
-
-document.addEventListener('change', (e) => {
-  if (e.target.id === 'acftType') {
-    document.getElementById('acftOtherWrap').classList.toggle('visible', e.target.value === 'other');
-  }
-});
-
-// ===================== AGREEMENTS =====================
-function toggleAgreement(n) {
-  const el = document.getElementById(`agr${n}`);
-  el.classList.toggle('checked');
-}
-
-function acceptAllAgreements() {
-  for (let i = 0; i < 5; i++) {
-    document.getElementById(`agr${i}`).classList.add('checked');
-  }
-  showToast('All agreements accepted', 'success');
-}
-
-// ===================== COLLECT FORM DATA =====================
-function collectFormData() {
-  // PAX data
-  const pax = [];
-  for (let i = 1; i <= 30; i++) {
-    const name = document.getElementById(`p${i}_name`)?.value;
-    if (name) {
-      pax.push({
-        serial: i,
-        service: document.getElementById(`p${i}_svc`)?.value,
-        rank: document.getElementById(`p${i}_rank`)?.value,
-        name,
-        from: document.getElementById(`p${i}_from`)?.value,
-        to: document.getElementById(`p${i}_to`)?.value,
-        bags: document.getElementById(`p${i}_bags`)?.value,
-        bagWeight: document.getElementById(`p${i}_bagwt`)?.value,
-        paxWeight: document.getElementById(`p${i}_paxwt`)?.value,
-      });
-    }
-  }
-
-  const paxType = document.querySelector('input[name="paxType"]:checked')?.value;
-  const vip = document.querySelector('input[name="vip"]:checked')?.value;
-  const dg = document.querySelector('input[name="dg"]:checked')?.value;
-
-  return {
-    meta: {
-      version: '2.0',
-      submittedAt: new Date().toISOString(),
-      reference: generateRef(),
-    },
-    section1: {
-      unit: document.getElementById('unit')?.value,
-      submissionDTG: document.getElementById('submissionDTG')?.value,
-      primaryContact: {
-        name: document.getElementById('priName')?.value,
-        mobile: document.getElementById('priMobile')?.value,
-        email: document.getElementById('priEmail')?.value,
-      },
-      alternateContact: {
-        name: document.getElementById('altName')?.value,
-        mobile: document.getElementById('altMobile')?.value,
-        email: document.getElementById('altEmail')?.value,
-      },
-      taskDate: document.getElementById('taskDate')?.value,
-      taskDateLatest: document.getElementById('taskDateLatest')?.value,
-    },
-    section2: {
-      supportDescription: document.getElementById('supportDesc')?.value,
-      supportDTG: document.getElementById('supportDTG')?.value,
-      acftType: document.getElementById('acftType')?.value === 'other'
-        ? document.getElementById('acftOther')?.value
-        : document.getElementById('acftType')?.value,
-      locations: document.getElementById('locations')?.value,
-      departureICAO: document.getElementById('depICAO')?.value,
-      destinationICAO: document.getElementById('destICAO')?.value,
-    },
-    paxCargo: {
-      paxCount: document.getElementById('paxCount')?.value,
-      paxType,
-      vip,
-      vipTitle: vip === 'Y' ? document.getElementById('vipTitle')?.value : null,
-      dangerousGoods: dg,
-      dgDescription: dg === 'Y' ? document.getElementById('dgDesc')?.value : null,
-      cargoItems: document.getElementById('cargoItems')?.value,
-      cargoWeight: document.getElementById('cargoWeight')?.value,
-      cargoPieces: document.getElementById('cargoPieces')?.value,
-      specialInstructions: document.getElementById('specialInstructions')?.value,
-    },
-    rwSupport: {
-      pickupPoint: {
-        location: document.getElementById('puLocation')?.value,
-        lzDescription: document.getElementById('puLZ')?.value,
-        departureTime: document.getElementById('puTime')?.value,
-        callsign: document.getElementById('puCallsign')?.value,
-        frequency: document.getElementById('puFreq')?.value,
-      },
-      deliveryPoint: {
-        location: document.getElementById('dlLocation')?.value,
-        lzDescription: document.getElementById('dlLZ')?.value,
-        arrivalTime: document.getElementById('dlTime')?.value,
-        callsign: document.getElementById('dlCallsign')?.value,
-        frequency: document.getElementById('dlFreq')?.value,
-      },
-    },
-    passengerList: {
-      atoNumber: document.getElementById('atoNumber')?.value,
-      route: document.getElementById('paxRoute')?.value,
-      passengers: pax,
-      totalPax: document.getElementById('totalPax')?.value,
-      totalBagWeight: document.getElementById('totalBagWt')?.value,
-      totalPaxWeight: document.getElementById('totalPaxWt')?.value,
-      baseUnit: document.getElementById('baseUnit')?.value,
-    },
-    authorisation: {
-      supportingComments: document.getElementById('supportingComments')?.value,
-      dAirPNGDF: { date: document.getElementById('dairDate')?.value, signed: !sigPads['sig-dair']?.isEmpty() },
-      comdPNGDF: { date: document.getElementById('comdDate')?.value, signed: !sigPads['sig-comd']?.isEmpty() },
-      nonPNGDFComments: document.getElementById('nonPNGDFComments')?.value,
-      so2AvnAuthority: { date: document.getElementById('so2Date')?.value, signed: !sigPads['sig-so2']?.isEmpty() },
-      dcpTmLdr: { date: document.getElementById('dcpDate')?.value, signed: !sigPads['sig-dcp']?.isEmpty() },
-      hads: { date: document.getElementById('hadsDate')?.value, signed: !sigPads['sig-hads']?.isEmpty() },
-      directionGuidance: document.getElementById('directionGuidance')?.value,
-    },
-  };
-}
-
-// ===================== REFERENCE NUMBER =====================
-function generateRef() {
-  const now = new Date();
-  const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-  const r = Math.floor(Math.random() * 900) + 100;
-  return `ATR-${d}-${r}`;
-}
-
-// ===================== SAVE DRAFT =====================
-function saveDraft() {
-  try {
-    localStorage.setItem('atr_draft', JSON.stringify(collectFormData()));
-    showToast('Draft saved locally', 'success');
-  } catch(e) {
-    showToast('Could not save draft', 'error');
-  }
-}
-
-function loadDraft() {
-  try {
-    const d = localStorage.getItem('atr_draft');
-    if (!d) return;
-    // Optionally restore — silent load
-  } catch(e) {}
-}
-
-// ===================== DOWNLOAD JSON =====================
-function downloadJSON() {
-  const data = collectFormData();
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${data.meta.reference}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('ATR downloaded as JSON', 'success');
-}
-
-// ===================== EMAIL =====================
-function emailForm() {
-  const data = collectFormData();
-  const unit = document.getElementById('unit')?.value || '[Unit]';
-  const date = document.getElementById('taskDate')?.value || '[Date]';
-  const subject = encodeURIComponent(`ATR Submission — ${unit} — ${date}`);
-  const body = encodeURIComponent(`Please find attached the Air Task Request from ${unit}.\n\nReference: ${data.meta.reference}\nSubmitted: ${new Date().toLocaleString()}\n\nPlease process at your earliest convenience.\n\nSent via ATR Digital Form v2.0`);
-  window.open(`mailto:Pngdf.atr@outlook.com?subject=${subject}&body=${body}`);
-}
-
-// ===================== GOOGLE DRIVE =====================
-function saveToGoogleDrive() {
-  // Google Drive integration — requires OAuth2 client_id configuration
-  // In production, replace CLIENT_ID with your registered Google Cloud project OAuth2 client ID
-  // The form data will be saved as a JSON file to the user's Drive root folder
-
-  const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // ← Replace with your OAuth2 Client ID
-  const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
-  if (CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-    showGDriveInstructions();
-    return;
-  }
-
-  // Load Google Identity Services
-  const script = document.createElement('script');
-  script.src = 'https://accounts.google.com/gsi/client';
-  script.onload = () => initGoogleAuth(CLIENT_ID, SCOPES);
-  document.head.appendChild(script);
-}
-
-function showGDriveInstructions() {
-  const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px';
-  modal.innerHTML = `
-    <div style="background:var(--panel);border:1px solid var(--border-bright);border-radius:12px;padding:28px;max-width:500px;width:100%">
-      <h3 style="font-family:'Rajdhani',sans-serif;color:var(--gold);font-size:1.1rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px">Google Drive Setup Required</h3>
-      <p style="font-size:0.82rem;color:var(--text-dim);line-height:1.6;margin-bottom:16px">To enable Google Drive saving, a Google Cloud OAuth2 Client ID needs to be configured by your IT administrator:</p>
-      <ol style="font-size:0.78rem;color:var(--text-dim);padding-left:20px;line-height:2">
-        <li>Go to <strong style="color:var(--steel-light)">console.cloud.google.com</strong></li>
-        <li>Create a project → Enable <strong style="color:var(--steel-light)">Google Drive API</strong></li>
-        <li>Create OAuth2 credentials → Web Application</li>
-        <li>Add your domain to authorized origins</li>
-        <li>Replace <strong style="color:var(--gold)">YOUR_GOOGLE_CLIENT_ID</strong> in this file</li>
-      </ol>
-      <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="this.closest('div[style]').remove();downloadJSON();" style="background:var(--navy-light);border:1px solid var(--border-bright);color:var(--text);padding:10px 18px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82rem;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">Download JSON Instead</button>
-        <button onclick="this.closest('div[style]').remove()" style="background:var(--steel);border:none;color:#fff;padding:10px 18px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.82rem;letter-spacing:0.08em;cursor:pointer;text-transform:uppercase">Close</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-}
-
-function initGoogleAuth(clientId, scopes) {
-  const tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: clientId,
-    scope: scopes,
-    callback: (resp) => {
-      if (resp.error) { showToast('Google auth failed', 'error'); return; }
-      uploadToDrive(resp.access_token);
-    }
-  });
-  tokenClient.requestAccessToken();
-}
-
-async function uploadToDrive(accessToken) {
-  const data = collectFormData();
-  const fileName = `${data.meta.reference}.json`;
-  const content = JSON.stringify(data, null, 2);
-
-  showToast('Uploading to Google Drive…', 'success');
-
-  // Create file metadata
-  const metadata = { name: fileName, mimeType: 'application/json', parents: ['root'] };
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', new Blob([content], { type: 'application/json' }));
-
-  try {
-    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
-      body: form
-    });
-    const json = await res.json();
-    if (json.id) {
-      showToast(`Saved: ${fileName}`, 'success');
+    if (tab === 'login') {
+      if (loginForm) loginForm.style.display = 'block';
+      if (registerForm) registerForm.style.display = 'none';
+      if (loginTab) {
+        loginTab.style.borderColor = 'var(--gold)';
+        loginTab.style.color = 'var(--gold)';
+      }
+      if (registerTab) {
+        registerTab.style.borderColor = 'transparent';
+        registerTab.style.color = 'var(--text-dim)';
+      }
     } else {
-      showToast('Upload failed', 'error');
+      if (loginForm) loginForm.style.display = 'none';
+      if (registerForm) registerForm.style.display = 'block';
+      if (loginTab) {
+        loginTab.style.borderColor = 'transparent';
+        loginTab.style.color = 'var(--text-dim)';
+      }
+      if (registerTab) {
+        registerTab.style.borderColor = 'var(--gold)';
+        registerTab.style.color = 'var(--gold)';
+      }
     }
-  } catch(e) {
-    showToast('Upload error', 'error');
   }
-}
-
-// ===================== PRINT =====================
-function printForm() {
-  window.print();
-}
-
-// ===================== SUBMIT =====================
-function submitATR() {
-  const unit = document.getElementById('unit')?.value;
-  if (!unit) { showToast('Please fill in the Requesting Unit (Step 1)', 'error'); goToStep(0); return; }
-
-  const ref = generateRef();
-  document.getElementById('atrRef').textContent = ref;
-
-  // Hide all steps
-  document.querySelectorAll('.section-card').forEach(c => c.classList.remove('active'));
-  document.getElementById('successScreen').classList.add('success-screen', 'active');
-  document.getElementById('successScreen').style.display = 'block';
-
-  // Save draft one more time
-  saveDraft();
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  showToast('ATR submitted successfully!', 'success');
-}
-
-function startNew() {
-  if (confirm('Start a new ATR? Unsaved data will be lost.')) {
-    localStorage.removeItem('atr_draft');
-    location.reload();
-  }
-}
-
-// ===================== TOAST =====================
-function showToast(msg, type = 'success') {
-  const toast = document.getElementById('toast');
-  const icon = document.getElementById('toastIcon');
-  const msgEl = document.getElementById('toastMsg');
-  toast.className = `toast ${type}`;
-  icon.textContent = type === 'success' ? '✓' : '✕';
-  msgEl.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
-}
+  window.switchAuthTab = switchAuthTab;
 </script>
 </body>
 </html>

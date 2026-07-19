@@ -5,6 +5,11 @@ export const createATR = async (req, res) => {
   try {
     const { refNumber, formData, signature } = req.body;
 
+    // Harden createATR: Restrict creation privileges exclusively to the Requesting Unit role
+    if (req.user.role !== 'Requesting Unit') {
+      return res.status(403).json({ error: 'Access forbidden: Only Requesting Unit is allowed to initiate an ATR.' });
+    }
+
     const existing = await prisma.atrRequest.findUnique({ where: { refNumber } });
     if (existing) return res.status(400).json({ error: 'Reference number already exists.' });
 
@@ -18,7 +23,8 @@ export const createATR = async (req, res) => {
         }
       });
 
-      if (signature) {
+      // Handle optional/nullable signature block safely
+      if (signature && signature.imageBlob) {
         await tx.signature.create({
           data: {
             atrRequestId: request.id,
@@ -39,8 +45,15 @@ export const createATR = async (req, res) => {
 
 export const listATRs = async (req, res) => {
   try {
+    const { status } = req.query;
+    const where = {};
+    if (status) {
+      where.status = status;
+    }
+
     // Return workflows visible or actionable by user status role
     const requests = await prisma.atrRequest.findMany({
+      where,
       include: { signatures: true },
       orderBy: { createdAt: 'desc' }
     });
@@ -72,6 +85,20 @@ export const advanceStatus = async (req, res) => {
 
     const request = await prisma.atrRequest.findUnique({ where: { id } });
     if (!request) return res.status(404).json({ error: 'ATR not found' });
+
+    // Verify current status matches the specific role responsible
+    const statusToRoleMap = {
+      'AMS': 'AMS',
+      'SO3_AIR_PREP': 'SO3 Air Prep',
+      'D_AIR': 'D Air',
+      'COMD': 'COMD',
+      'ADS': 'ADS'
+    };
+
+    const expectedRole = statusToRoleMap[request.status];
+    if (expectedRole && req.user.role !== expectedRole) {
+      return res.status(403).json({ error: `Access forbidden: Role '${expectedRole}' is required to advance from state '${request.status}'` });
+    }
 
     const currentIdx = statusWorkflow.indexOf(request.status);
     const nextStatus = statusWorkflow[currentIdx + 1];

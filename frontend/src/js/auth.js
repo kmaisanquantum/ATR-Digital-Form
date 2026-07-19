@@ -31,6 +31,7 @@ export function updateRoleUI() {
   const loginSection = document.getElementById('auth-login-section');
   const userStatusSection = document.getElementById('auth-user-status-section');
   const officeOnlyBadges = document.querySelectorAll('.office-only-badge');
+  const approvalsNavBtn = document.getElementById('approvals-nav-btn');
 
   if (user) {
     if (loginSection) loginSection.style.display = 'none';
@@ -49,6 +50,10 @@ export function updateRoleUI() {
     officeOnlyBadges.forEach(badge => {
       badge.style.display = isOfficeRole ? 'inline-block' : 'none';
     });
+
+    if (approvalsNavBtn) {
+      approvalsNavBtn.style.display = isOfficeRole ? 'inline-block' : 'none';
+    }
 
     // Disable signature pad buttons or canvas if not authorized for that role
     const padToRoleMap = {
@@ -79,6 +84,18 @@ export function updateRoleUI() {
     officeOnlyBadges.forEach(badge => {
       badge.style.display = 'none';
     });
+
+    if (approvalsNavBtn) {
+      approvalsNavBtn.style.display = 'none';
+    }
+
+    // Hide approvals view if not logged in
+    const approvalsView = document.getElementById('approvals-view');
+    if (approvalsView) approvalsView.style.display = 'none';
+
+    // Restore progress bar
+    const progressWrap = document.querySelector('.progress-bar-wrap');
+    if (progressWrap) progressWrap.style.display = 'block';
 
     // Disable all office sections by default if not logged in
     const officeSections = ['sig-dair', 'sig-comd', 'sig-so2', 'sig-dcp', 'sig-hads'];

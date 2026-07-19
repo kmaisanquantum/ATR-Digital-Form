@@ -25,11 +25,16 @@ import {
   apiRegister,
   apiSubmitATR,
   queueOfflineATR,
-  syncOfflineQueue
+  syncOfflineQueue,
+  apiGetAllATRs,
+  apiGetATR,
+  apiSignOffATR
 } from './js/api.js';
 
 // Global Signature Pads container
 const sigPads = {};
+let currentSelectedAtrId = null;
+let approvalSigPad = null;
 
 // Setup Toast Notification helper
 export function showToast(msg, type = 'success') {
@@ -216,6 +221,305 @@ function showSuccessScreen(ref) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ===================== APPROVALS VIEW IMPLEMENTATION =====================
+export function toggleApprovalsView() {
+  // Hide all step cards, success screen
+  document.querySelectorAll('.section-card').forEach(c => c.classList.remove('active'));
+  const successScreen = document.getElementById('successScreen');
+  if (successScreen) successScreen.style.display = 'none';
+
+  // Hide progress bar wrap
+  const progressWrap = document.querySelector('.progress-bar-wrap');
+  if (progressWrap) progressWrap.style.display = 'none';
+
+  // Show approvals view
+  const approvalsView = document.getElementById('approvals-view');
+  if (approvalsView) approvalsView.style.display = 'block';
+
+  // Load the list of ATRs
+  loadApprovalsList();
+}
+
+export function closeApprovalsView() {
+  // Hide approvals view
+  const approvalsView = document.getElementById('approvals-view');
+  if (approvalsView) approvalsView.style.display = 'none';
+
+  // Show progress bar wrap
+  const progressWrap = document.querySelector('.progress-bar-wrap');
+  if (progressWrap) progressWrap.style.display = 'block';
+
+  // Show current wizard step
+  goToStep(currentStep, sigPads);
+}
+
+export async function loadApprovalsList(statusFilter = '') {
+  const container = document.getElementById('approvals-list-container');
+  if (!container) return;
+
+  container.innerHTML = `<div style="font-size: 0.8rem; text-align: center; color: var(--text-dim); padding: 40px 0;"><span class="spinner" style="display:inline-block"></span> Loading requests...</div>`;
+
+  try {
+    let atrs = await apiGetAllATRs();
+
+    if (statusFilter) {
+      atrs = atrs.filter(a => a.status === statusFilter);
+    }
+
+    if (atrs.length === 0) {
+      container.innerHTML = `<div style="font-size: 0.8rem; text-align: center; color: var(--text-dim); padding: 40px 0;">No active ATRs found.</div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    atrs.forEach(atr => {
+      const unit = atr.formData?.section1?.unit || 'Unknown Unit';
+      const date = atr.formData?.section1?.taskDate || 'Unknown Date';
+      const ref = atr.refNumber;
+
+      const item = document.createElement('div');
+      item.style.cssText = `
+        background: var(--input-bg);
+        border: 1px solid var(--border-bright);
+        border-radius: 6px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 8px;
+      `;
+      item.onclick = () => selectAtrForApproval(atr.id);
+
+      if (currentSelectedAtrId === atr.id) {
+        item.style.borderColor = 'var(--gold)';
+        item.style.boxShadow = '0 0 0 2px rgba(201, 168, 76, 0.2)';
+      }
+
+      item.innerHTML = `
+        <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.82rem; color: var(--gold);">${ref}</div>
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text); margin-top: 4px;">${unit}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+          <span style="font-size: 0.68rem; color: var(--text-dim);">${date}</span>
+          <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(201, 168, 76, 0.1); color: var(--gold); border: 1px solid rgba(201, 168, 76, 0.3); text-transform: uppercase;">${atr.status}</span>
+        </div>
+      `;
+      container.appendChild(item);
+    });
+  } catch (err) {
+    container.innerHTML = `<div style="font-size: 0.8rem; text-align: center; color: var(--red); padding: 40px 0;">Error: ${err.message || 'Failed to load list'}</div>`;
+  }
+}
+
+export async function selectAtrForApproval(id) {
+  currentSelectedAtrId = id;
+
+  // Refresh highlighting on list
+  const items = document.getElementById('approvals-list-container').children;
+  // Re-load list structure is simpler to keep in sync:
+  const container = document.getElementById('approvals-list-container');
+  if (container) {
+    Array.from(container.children).forEach(child => {
+      // Find the item corresponding to id and apply style
+      const clickHandlerStr = child.onclick ? child.onclick.toString() : '';
+      if (clickHandlerStr.includes(id)) {
+        child.style.borderColor = 'var(--gold)';
+        child.style.boxShadow = '0 0 0 2px rgba(201, 168, 76, 0.2)';
+      } else {
+        child.style.borderColor = 'var(--border-bright)';
+        child.style.boxShadow = 'none';
+      }
+    });
+  }
+
+  const detailPanel = document.getElementById('approvals-detail-panel');
+  if (!detailPanel) return;
+
+  detailPanel.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 300px; color: var(--text-dim);"><span class="spinner" style="display:inline-block"></span> Loading details...</div>`;
+
+  try {
+    const atr = await apiGetATR(id);
+    const data = atr.formData;
+    const user = getCurrentUser();
+
+    // Map current status to expected role responsible
+    const statusToRoleMap = {
+      'AMS': 'AMS',
+      'SO3_AIR_PREP': 'SO3 Air Prep',
+      'D_AIR': 'D Air',
+      'COMD': 'COMD',
+      'ADS': 'ADS'
+    };
+
+    const isCurrentSigner = user && statusToRoleMap[atr.status] === user.role;
+
+    // Render passengers list
+    const passengers = data.passengerList?.passengers || [];
+    let paxRows = '';
+    if (passengers.length === 0) {
+      paxRows = '<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 10px;">No passengers specified</td></tr>';
+    } else {
+      passengers.forEach(p => {
+        paxRows += `
+          <tr>
+            <td style="border: 1px solid var(--border); padding: 6px; text-align:center;">${p.serial}</td>
+            <td style="border: 1px solid var(--border); padding: 6px;">${p.service || ''}</td>
+            <td style="border: 1px solid var(--border); padding: 6px;">${p.rank || ''}</td>
+            <td style="border: 1px solid var(--border); padding: 6px;">${p.name || ''}</td>
+            <td style="border: 1px solid var(--border); padding: 6px; text-align:center;">${p.from || ''}</td>
+            <td style="border: 1px solid var(--border); padding: 6px; text-align:center;">${p.to || ''}</td>
+          </tr>
+        `;
+      });
+    }
+
+    // Render signatures collected so far
+    let signaturesHtml = '';
+    const sigs = atr.signatures || [];
+    if (sigs.length === 0) {
+      signaturesHtml = '<div style="font-size: 0.75rem; color: var(--text-dim);">No signatures collected yet.</div>';
+    } else {
+      sigs.forEach(s => {
+        signaturesHtml += `
+          <div style="background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; align-items: center; gap: 14px; margin-bottom: 8px;">
+            <div style="flex-shrink: 0; width: 120px; height: 50px; background: #060e1d; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+              <img src="${s.imageBlob}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--gold); text-transform: uppercase;">${s.role}</div>
+              <div style="font-size: 0.7rem; color: var(--text); margin-top: 2px;">Signed by: ${s.signedBy}</div>
+              <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 2px;">Date: ${new Date(s.signedAt).toLocaleString()}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // Show Signature pad section if isCurrentSigner is true
+    let approvalSigPadHtml = '';
+    if (isCurrentSigner) {
+      approvalSigPadHtml = `
+        <div class="field-group" style="margin-top: 10px; border-color: var(--gold);">
+          <div class="field-group-title" style="color: var(--gold);">CAPTURE YOUR SIGNATURE (${user.role})</div>
+          <div class="sig-wrap" style="margin-bottom: 12px;">
+            <canvas class="sig-canvas" id="sig-approval-canvas" width="800" height="100"></canvas>
+            <div class="sig-controls">
+              <span class="sig-hint">Sign inside the box</span>
+              <button class="btn-clear-sig" onclick="clearApprovalSig()">Clear</button>
+            </div>
+          </div>
+          <button class="btn-submit" onclick="submitSignOffApproval('${id}')" style="width:100%; justify-content: center;">
+            Confirm Sign Off & Advance Status
+          </button>
+        </div>
+      `;
+    } else {
+      approvalSigPadHtml = `
+        <div style="background: rgba(201, 168, 76, 0.05); border: 1px solid rgba(201, 168, 76, 0.15); border-radius: 8px; padding: 12px; font-size: 0.75rem; color: var(--text-dim); text-align: center; margin-top: 10px;">
+          ${user ? `Status is currently awaiting <strong>${statusToRoleMap[atr.status] || atr.status}</strong>. Your role is <strong>${user.role}</strong>.` : 'Log in to sign off this request.'}
+        </div>
+      `;
+    }
+
+    detailPanel.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+        <div>
+          <h2 style="font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; color: var(--gold); letter-spacing: 0.05em;">${atr.refNumber}</h2>
+          <p style="font-size: 0.72rem; color: var(--text-dim); margin-top: 2px;">Created on ${new Date(atr.createdAt).toLocaleString()}</p>
+        </div>
+        <span style="font-size: 0.75rem; font-family: 'Rajdhani', sans-serif; font-weight: 700; background: rgba(39, 174, 96, 0.1); color: var(--green); border: 1px solid rgba(39, 174, 96, 0.3); padding: 4px 10px; border-radius: 6px; text-transform: uppercase;">
+          Status: ${atr.status}
+        </span>
+      </div>
+
+      <div style="overflow-y: auto; max-height: 400px; display: flex; flex-direction: column; gap: 16px; padding-right: 4px;">
+        <div>
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--steel-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">1. Organisation & Contact</div>
+          <div style="font-size: 0.8rem; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; line-height: 1.6;">
+            <strong>Requesting Unit:</strong> ${data.section1?.unit || ''}<br>
+            <strong>Primary Contact:</strong> ${data.section1?.primaryContact?.name || ''} (${data.section1?.primaryContact?.mobile || ''} | ${data.section1?.primaryContact?.email || ''})<br>
+            <strong>Task Date:</strong> ${data.section1?.taskDate || ''} ${data.section1?.taskDateLatest ? `to ${data.section1.taskDateLatest}` : ''}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--steel-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">2. Task Description & Route</div>
+          <div style="font-size: 0.8rem; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; line-height: 1.6;">
+            <strong>Description:</strong> ${data.section2?.supportDescription || ''}<br>
+            <strong>Route:</strong> ${data.section2?.locations || ''} (${data.section2?.departureICAO || ''} → ${data.section2?.destinationICAO || ''})<br>
+            <strong>Aircraft:</strong> ${data.section2?.acftType || ''} | <strong>DTG:</strong> ${data.section2?.supportDTG || ''}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--steel-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">3. Passenger List</div>
+          <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
+              <thead>
+                <tr style="background: var(--navy-light);">
+                  <th style="border: 1px solid var(--border); padding: 6px;">#</th>
+                  <th style="border: 1px solid var(--border); padding: 6px;">Service</th>
+                  <th style="border: 1px solid var(--border); padding: 6px;">Rank</th>
+                  <th style="border: 1px solid var(--border); padding: 6px;">Name</th>
+                  <th style="border: 1px solid var(--border); padding: 6px;">From</th>
+                  <th style="border: 1px solid var(--border); padding: 6px;">To</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${paxRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--steel-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">4. Workflow Sign-offs</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${signaturesHtml}
+          </div>
+        </div>
+      </div>
+
+      ${approvalSigPadHtml}
+    `;
+
+    // Instantiate SigPad dynamically for approvals
+    if (isCurrentSigner) {
+      setTimeout(() => {
+        approvalSigPad = new SigPad('sig-approval-canvas');
+        if (approvalSigPad) approvalSigPad.resize();
+      }, 100);
+    }
+  } catch (err) {
+    detailPanel.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; min-height: 300px; color: var(--red); font-size: 0.85rem;">Error loading ATR: ${err.message || 'Unknown error'}</div>`;
+  }
+}
+
+export function clearApprovalSig() {
+  if (approvalSigPad) approvalSigPad.clear();
+}
+
+export async function submitSignOffApproval(id) {
+  if (!approvalSigPad || approvalSigPad.isEmpty()) {
+    showToast('Please capture your signature before signing off', 'error');
+    return;
+  }
+
+  const signatureBlob = approvalSigPad.toDataURL();
+  const user = getCurrentUser();
+  const signedBy = user ? user.username : 'Unknown User';
+
+  try {
+    showToast('Submitting approval...', 'success');
+    await apiSignOffATR(id, signatureBlob, signedBy);
+    showToast('ATR successfully signed off!', 'success');
+
+    // Refresh list and detail pane
+    await loadApprovalsList();
+    await selectAtrForApproval(id);
+  } catch (err) {
+    showToast(err.message || 'Approval failed', 'error');
+  }
+}
+
 // Window init
 window.addEventListener('load', async () => {
   // Initialize signature pads
@@ -250,6 +554,9 @@ window.addEventListener('resize', () => {
   Object.values(sigPads).forEach(p => {
     if (p && typeof p.resize === 'function') p.resize();
   });
+  if (approvalSigPad) {
+    approvalSigPad.resize();
+  }
 });
 
 // Expose methods to window context for onclick handlers (maintaining strict backwards compatibility)
@@ -268,6 +575,14 @@ window.printForm = printForm;
 window.saveToGoogleDrive = saveToGoogleDrive;
 window.submitATR = submitATR;
 window.startNew = startNew;
+
+// Approvals dashboard navigation
+window.toggleApprovalsView = toggleApprovalsView;
+window.closeApprovalsView = closeApprovalsView;
+window.loadApprovalsList = loadApprovalsList;
+window.selectAtrForApproval = selectAtrForApproval;
+window.clearApprovalSig = clearApprovalSig;
+window.submitSignOffApproval = submitSignOffApproval;
 
 // Client auth triggers
 window.handleLogin = async (event) => {
