@@ -5,11 +5,6 @@ export const createATR = async (req, res) => {
   try {
     const { refNumber, formData, signature } = req.body;
 
-    // Harden createATR: Restrict creation privileges exclusively to the Requesting Unit role
-    if (req.user.role !== 'Requesting Unit') {
-      return res.status(403).json({ error: 'Access forbidden: Only Requesting Unit is allowed to initiate an ATR.' });
-    }
-
     const existing = await prisma.atrRequest.findUnique({ where: { refNumber } });
     if (existing) return res.status(400).json({ error: 'Reference number already exists.' });
 
@@ -23,14 +18,14 @@ export const createATR = async (req, res) => {
         }
       });
 
-      // Handle optional/nullable signature block safely
+      // Handle optional/nullable signature block safely with fallback for guest (unauthenticated) users
       if (signature && signature.imageBlob) {
         await tx.signature.create({
           data: {
             atrRequestId: request.id,
-            role: req.user.role,
+            role: req.user ? req.user.role : 'Requesting Unit',
             imageBlob: signature.imageBlob,
-            signedBy: req.user.username
+            signedBy: req.user ? req.user.username : (signature.signedBy || 'Guest Requester')
           }
         });
       }
