@@ -8,7 +8,7 @@ RUN npm run build
 
 # Stage 2: Setup production backend and merge frontend assets
 FROM node:18-alpine AS production-server
-WORKDIR /app/backend
+WORKDIR /usr/src/app
 
 # Copy prisma schema and package files
 COPY backend/package*.json ./
