@@ -49,6 +49,7 @@ export const register = async (req, res) => {
       user: { id: user.id, username: user.username, role: user.role }
     });
   } catch (error) {
+    console.error('Register error:', error);
     return res.status(500).json({ error: error.message || 'Server registration error' });
   }
 };
@@ -79,6 +80,7 @@ export const login = async (req, res) => {
       user: { id: user.id, username: user.username, role: user.role }
     });
   } catch (error) {
+    console.error('Login error:', error);
     return res.status(500).json({ error: error.message || 'Server login error' });
   }
 };
