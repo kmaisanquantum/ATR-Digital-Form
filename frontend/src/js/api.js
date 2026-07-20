@@ -127,6 +127,14 @@ export async function apiSignOffATR(id, signatureBlob, signedBy) {
   });
 }
 
+// Public automated server-side email dispatch
+export async function apiEmailATR(payload) {
+  return fetchWithAuth('/atrs/email', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
 // Sync local offline queued items with the server
 export async function syncOfflineQueue(showToast) {
   if (!navigator.onLine) return;
