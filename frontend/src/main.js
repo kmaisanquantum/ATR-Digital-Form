@@ -251,7 +251,13 @@ async function uploadToDrive(accessToken) {
     });
 
     if (!res.ok) {
-      throw new Error(`Google Drive API returned ${res.status}`);
+      const errBody = await res.json().catch(() => ({}));
+      console.error('Google Drive upload error body:', errBody);
+
+      const reason = errBody?.error?.errors?.[0]?.reason || errBody?.error?.status || '';
+      const msg = errBody?.error?.message || '';
+
+      throw new Error(`Google Drive API ${res.status}${reason ? ' (' + reason + ')' : ''}: ${msg}`);
     }
 
     const json = await res.json();
