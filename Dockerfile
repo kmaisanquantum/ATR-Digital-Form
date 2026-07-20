@@ -13,6 +13,7 @@ WORKDIR /usr/src/app
 # Copy prisma schema and package files
 COPY backend/package*.json ./
 COPY backend/prisma ./prisma
+RUN apk add --no-cache openssl libc6-compat
 RUN npm install
 RUN npx prisma generate
 
