@@ -28,7 +28,8 @@ import {
   syncOfflineQueue,
   apiGetAllATRs,
   apiGetATR,
-  apiSignOffATR
+  apiSignOffATR,
+  apiEmailATR
 } from './js/api.js';
 
 // Global Signature Pads container
@@ -99,21 +100,39 @@ export function downloadJSON() {
 }
 
 // Open native mailto with filled details and prompt attachment
-export function emailForm() {
+export async function emailForm() {
   const data = collectFormData(sigPads);
+  const refNumber = data.meta?.reference || 'ATR';
   const unit = document.getElementById('unit')?.value || '[Unit]';
   const date = document.getElementById('taskDate')?.value || '[Date]';
 
-  // 1. Download JSON automatically
-  downloadJSON();
+  // Differentiate between success and fallback paths cleanly
+  try {
+    if (!navigator.onLine) {
+      throw new Error('Offline mode detected');
+    }
+    showToast('Dispatching automated email...', 'success');
+    await apiEmailATR({
+      refNumber,
+      formData: data,
+      unit,
+      date
+    });
+    showToast('ATR emailed to Air Operations Centre', 'success');
+  } catch (err) {
+    console.error('Automated email dispatch failed, falling back to mailto:', err);
+    // Execute original local recovery mechanism
+    // 1. Download JSON locally automatically
+    downloadJSON();
 
-  // 2. Open native mailto link
-  const subject = encodeURIComponent(`ATR Submission — ${unit} — ${date}`);
-  const body = encodeURIComponent(`Please find attached the Air Task Request from ${unit}.\n\nReference: ${data.meta.reference}\nSubmitted: ${new Date().toLocaleString()}\n\nNote: Please attach the downloaded ${data.meta.reference || 'ATR'}.json file to this email before sending.\n\nSent via ATR Digital Form v2.0`);
-  window.open(`mailto:Pngdf.atr@outlook.com?subject=${subject}&body=${body}`);
+    // 2. Open native mailto link
+    const subject = encodeURIComponent(`ATR Submission — ${unit} — ${date}`);
+    const body = encodeURIComponent(`Please find attached the Air Task Request from ${unit}.\n\nReference: ${data.meta.reference}\nSubmitted: ${new Date().toLocaleString()}\n\nNote: Please attach the downloaded ${data.meta.reference || 'ATR'}.json file to this email before sending.\n\nSent via ATR Digital Form v2.0`);
+    window.open(`mailto:airoperationscenteratr@gmail.com?subject=${subject}&body=${body}`);
 
-  // 3. Concurrently display instruction modal
-  showEmailAttachmentInstructions(data.meta.reference || 'ATR');
+    // 3. Concurrently display instruction modal
+    showEmailAttachmentInstructions(data.meta.reference || 'ATR');
+  }
 }
 
 function showEmailAttachmentInstructions(ref) {
@@ -125,7 +144,7 @@ function showEmailAttachmentInstructions(ref) {
       <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6;margin-bottom:16px">The ATR configuration file <strong>${ref}.json</strong> has been downloaded to your local computer.</p>
       <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:0.8rem;color:var(--text);line-height:1.5;margin-bottom:16px;">
         <strong>Instructions:</strong><br>
-        1. An email client window has been opened to <strong>Pngdf.atr@outlook.com</strong>.<br>
+        1. An email client window has been opened to <strong>airoperationscenteratr@gmail.com</strong>.<br>
         2. Please <strong>attach</strong> the downloaded file (<strong>${ref}.json</strong>) from your Downloads folder to that email.<br>
         3. Send the email to submit your request to the movements cell.
       </div>

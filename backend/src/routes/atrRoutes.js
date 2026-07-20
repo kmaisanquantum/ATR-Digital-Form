@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { createATR, listATRs, getATRById, advanceStatus } from '../controllers/atrController.js';
+import { sendAtrEmail } from '../controllers/mailController.js';
 import { requireAuth, requireRoles } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-// Open public submission model - no auth needed for creation
+// Open public submission model - no auth needed for creation or automated emailing
 router.post('/', createATR);
+router.post('/email', sendAtrEmail);
 router.get('/', requireAuth, listATRs);
 router.get('/:id', requireAuth, getATRById);
 
